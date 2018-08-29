@@ -71,123 +71,123 @@ struct CPUID2CacheDescriptorInfo {
  * From Intel SDM Volume 2A, CPUID instruction
  */
 struct CPUID2CacheDescriptorInfo cpuid2_cache_descriptors[] = {
-    [0x06] = { .level = 1, .type = ICACHE,        .size =   8 * KiB,
+    [0x06] = { .level = 1, .type = INSTRUCTION_CACHE, .size =   8 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x08] = { .level = 1, .type = ICACHE,        .size =  16 * KiB,
+    [0x08] = { .level = 1, .type = INSTRUCTION_CACHE, .size =  16 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x09] = { .level = 1, .type = ICACHE,        .size =  32 * KiB,
+    [0x09] = { .level = 1, .type = INSTRUCTION_CACHE, .size =  32 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x0A] = { .level = 1, .type = DCACHE,        .size =   8 * KiB,
+    [0x0A] = { .level = 1, .type = DATA_CACHE,        .size =   8 * KiB,
                .associativity = 2,  .line_size = 32, },
-    [0x0C] = { .level = 1, .type = DCACHE,        .size =  16 * KiB,
+    [0x0C] = { .level = 1, .type = DATA_CACHE,        .size =  16 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x0D] = { .level = 1, .type = DCACHE,        .size =  16 * KiB,
+    [0x0D] = { .level = 1, .type = DATA_CACHE,        .size =  16 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x0E] = { .level = 1, .type = DCACHE,        .size =  24 * KiB,
+    [0x0E] = { .level = 1, .type = DATA_CACHE,        .size =  24 * KiB,
                .associativity = 6,  .line_size = 64, },
-    [0x1D] = { .level = 2, .type = UNIFIED_CACHE, .size = 128 * KiB,
+    [0x1D] = { .level = 2, .type = UNIFIED_CACHE,     .size = 128 * KiB,
                .associativity = 2,  .line_size = 64, },
-    [0x21] = { .level = 2, .type = UNIFIED_CACHE, .size = 256 * KiB,
+    [0x21] = { .level = 2, .type = UNIFIED_CACHE,     .size = 256 * KiB,
                .associativity = 8,  .line_size = 64, },
     /* lines per sector is not supported cpuid2_cache_descriptor(),
     * so descriptors 0x22, 0x23 are not included
     */
-    [0x24] = { .level = 2, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0x24] = { .level = 2, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 16, .line_size = 64, },
     /* lines per sector is not supported cpuid2_cache_descriptor(),
     * so descriptors 0x25, 0x20 are not included
     */
-    [0x2C] = { .level = 1, .type = DCACHE,        .size =  32 * KiB,
+    [0x2C] = { .level = 1, .type = DATA_CACHE,        .size =  32 * KiB,
                .associativity = 8,  .line_size = 64, },
-    [0x30] = { .level = 1, .type = ICACHE,        .size =  32 * KiB,
+    [0x30] = { .level = 1, .type = INSTRUCTION_CACHE, .size =  32 * KiB,
                .associativity = 8,  .line_size = 64, },
-    [0x41] = { .level = 2, .type = UNIFIED_CACHE, .size = 128 * KiB,
+    [0x41] = { .level = 2, .type = UNIFIED_CACHE,     .size = 128 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x42] = { .level = 2, .type = UNIFIED_CACHE, .size = 256 * KiB,
+    [0x42] = { .level = 2, .type = UNIFIED_CACHE,     .size = 256 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x43] = { .level = 2, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0x43] = { .level = 2, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 4,  .line_size = 32, },
-    [0x44] = { .level = 2, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0x44] = { .level = 2, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 4,  .line_size = 32, },
-    [0x45] = { .level = 2, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0x45] = { .level = 2, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 4,  .line_size = 32, },
-    [0x46] = { .level = 3, .type = UNIFIED_CACHE, .size =   4 * MiB,
+    [0x46] = { .level = 3, .type = UNIFIED_CACHE,     .size =   4 * MiB,
                .associativity = 4,  .line_size = 64, },
-    [0x47] = { .level = 3, .type = UNIFIED_CACHE, .size =   8 * MiB,
+    [0x47] = { .level = 3, .type = UNIFIED_CACHE,     .size =   8 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0x48] = { .level = 2, .type = UNIFIED_CACHE, .size =   3 * MiB,
+    [0x48] = { .level = 2, .type = UNIFIED_CACHE,     .size =   3 * MiB,
                .associativity = 12, .line_size = 64, },
     /* Descriptor 0x49 depends on CPU family/model, so it is not included */
-    [0x4A] = { .level = 3, .type = UNIFIED_CACHE, .size =   6 * MiB,
+    [0x4A] = { .level = 3, .type = UNIFIED_CACHE,     .size =   6 * MiB,
                .associativity = 12, .line_size = 64, },
-    [0x4B] = { .level = 3, .type = UNIFIED_CACHE, .size =   8 * MiB,
+    [0x4B] = { .level = 3, .type = UNIFIED_CACHE,     .size =   8 * MiB,
                .associativity = 16, .line_size = 64, },
-    [0x4C] = { .level = 3, .type = UNIFIED_CACHE, .size =  12 * MiB,
+    [0x4C] = { .level = 3, .type = UNIFIED_CACHE,     .size =  12 * MiB,
                .associativity = 12, .line_size = 64, },
-    [0x4D] = { .level = 3, .type = UNIFIED_CACHE, .size =  16 * MiB,
+    [0x4D] = { .level = 3, .type = UNIFIED_CACHE,     .size =  16 * MiB,
                .associativity = 16, .line_size = 64, },
-    [0x4E] = { .level = 2, .type = UNIFIED_CACHE, .size =   6 * MiB,
+    [0x4E] = { .level = 2, .type = UNIFIED_CACHE,     .size =   6 * MiB,
                .associativity = 24, .line_size = 64, },
-    [0x60] = { .level = 1, .type = DCACHE,        .size =  16 * KiB,
+    [0x60] = { .level = 1, .type = DATA_CACHE,        .size =  16 * KiB,
                .associativity = 8,  .line_size = 64, },
-    [0x66] = { .level = 1, .type = DCACHE,        .size =   8 * KiB,
+    [0x66] = { .level = 1, .type = DATA_CACHE,        .size =   8 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x67] = { .level = 1, .type = DCACHE,        .size =  16 * KiB,
+    [0x67] = { .level = 1, .type = DATA_CACHE,        .size =  16 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x68] = { .level = 1, .type = DCACHE,        .size =  32 * KiB,
+    [0x68] = { .level = 1, .type = DATA_CACHE,        .size =  32 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x78] = { .level = 2, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0x78] = { .level = 2, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 4,  .line_size = 64, },
     /* lines per sector is not supported cpuid2_cache_descriptor(),
     * so descriptors 0x79, 0x7A, 0x7B, 0x7C are not included.
     */
-    [0x7D] = { .level = 2, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0x7D] = { .level = 2, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0x7F] = { .level = 2, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0x7F] = { .level = 2, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 2,  .line_size = 64, },
-    [0x80] = { .level = 2, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0x80] = { .level = 2, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 8,  .line_size = 64, },
-    [0x82] = { .level = 2, .type = UNIFIED_CACHE, .size = 256 * KiB,
+    [0x82] = { .level = 2, .type = UNIFIED_CACHE,     .size = 256 * KiB,
                .associativity = 8,  .line_size = 32, },
-    [0x83] = { .level = 2, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0x83] = { .level = 2, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 8,  .line_size = 32, },
-    [0x84] = { .level = 2, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0x84] = { .level = 2, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 8,  .line_size = 32, },
-    [0x85] = { .level = 2, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0x85] = { .level = 2, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 8,  .line_size = 32, },
-    [0x86] = { .level = 2, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0x86] = { .level = 2, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0x87] = { .level = 2, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0x87] = { .level = 2, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0xD0] = { .level = 3, .type = UNIFIED_CACHE, .size = 512 * KiB,
+    [0xD0] = { .level = 3, .type = UNIFIED_CACHE,     .size = 512 * KiB,
                .associativity = 4,  .line_size = 64, },
-    [0xD1] = { .level = 3, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0xD1] = { .level = 3, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 4,  .line_size = 64, },
-    [0xD2] = { .level = 3, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0xD2] = { .level = 3, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 4,  .line_size = 64, },
-    [0xD6] = { .level = 3, .type = UNIFIED_CACHE, .size =   1 * MiB,
+    [0xD6] = { .level = 3, .type = UNIFIED_CACHE,     .size =   1 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0xD7] = { .level = 3, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0xD7] = { .level = 3, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0xD8] = { .level = 3, .type = UNIFIED_CACHE, .size =   4 * MiB,
+    [0xD8] = { .level = 3, .type = UNIFIED_CACHE,     .size =   4 * MiB,
                .associativity = 8,  .line_size = 64, },
-    [0xDC] = { .level = 3, .type = UNIFIED_CACHE, .size = 1.5 * MiB,
+    [0xDC] = { .level = 3, .type = UNIFIED_CACHE,     .size = 1.5 * MiB,
                .associativity = 12, .line_size = 64, },
-    [0xDD] = { .level = 3, .type = UNIFIED_CACHE, .size =   3 * MiB,
+    [0xDD] = { .level = 3, .type = UNIFIED_CACHE,     .size =   3 * MiB,
                .associativity = 12, .line_size = 64, },
-    [0xDE] = { .level = 3, .type = UNIFIED_CACHE, .size =   6 * MiB,
+    [0xDE] = { .level = 3, .type = UNIFIED_CACHE,     .size =   6 * MiB,
                .associativity = 12, .line_size = 64, },
-    [0xE2] = { .level = 3, .type = UNIFIED_CACHE, .size =   2 * MiB,
+    [0xE2] = { .level = 3, .type = UNIFIED_CACHE,     .size =   2 * MiB,
                .associativity = 16, .line_size = 64, },
-    [0xE3] = { .level = 3, .type = UNIFIED_CACHE, .size =   4 * MiB,
+    [0xE3] = { .level = 3, .type = UNIFIED_CACHE,     .size =   4 * MiB,
                .associativity = 16, .line_size = 64, },
-    [0xE4] = { .level = 3, .type = UNIFIED_CACHE, .size =   8 * MiB,
+    [0xE4] = { .level = 3, .type = UNIFIED_CACHE,     .size =   8 * MiB,
                .associativity = 16, .line_size = 64, },
-    [0xEA] = { .level = 3, .type = UNIFIED_CACHE, .size =  12 * MiB,
+    [0xEA] = { .level = 3, .type = UNIFIED_CACHE,     .size =  12 * MiB,
                .associativity = 24, .line_size = 64, },
-    [0xEB] = { .level = 3, .type = UNIFIED_CACHE, .size =  18 * MiB,
+    [0xEB] = { .level = 3, .type = UNIFIED_CACHE,     .size =  18 * MiB,
                .associativity = 24, .line_size = 64, },
-    [0xEC] = { .level = 3, .type = UNIFIED_CACHE, .size =  24 * MiB,
+    [0xEC] = { .level = 3, .type = UNIFIED_CACHE,     .size =  24 * MiB,
                .associativity = 24, .line_size = 64, },
 };
 
@@ -238,10 +238,10 @@ static uint8_t cpuid2_cache_descriptor(CPUCacheInfo *cache)
 #define CACHE_COMPLEX_IDX     (1 << 2)
 
 /* Encode CacheType for CPUID[4].EAX */
-#define CACHE_TYPE(t) (((t) == DCACHE)  ? CACHE_TYPE_D  : \
-                         ((t) == ICACHE)  ? CACHE_TYPE_I  : \
-                         ((t) == UNIFIED_CACHE) ? CACHE_TYPE_UNIFIED : \
-                         0 /* Invalid value */)
+#define CACHE_TYPE(t) (((t) == DATA_CACHE) ? CACHE_TYPE_D : \
+                       ((t) == INSTRUCTION_CACHE) ? CACHE_TYPE_I : \
+                       ((t) == UNIFIED_CACHE) ? CACHE_TYPE_UNIFIED : \
+                       0 /* Invalid value */)
 
 
 /* Encode cache info for CPUID[4] */
@@ -538,7 +538,7 @@ static void encode_topo_cpuid8000001e(CPUState *cs, X86CPU *cpu,
 
 /* L1 data cache: */
 static CPUCacheInfo legacy_l1d_cache = {
-    .type = DCACHE,
+    .type = DATA_CACHE,
     .level = 1,
     .size = 32 * KiB,
     .self_init = 1,
@@ -551,7 +551,7 @@ static CPUCacheInfo legacy_l1d_cache = {
 
 /*FIXME: CPUID leaf 0x80000005 is inconsistent with leaves 2 & 4 */
 static CPUCacheInfo legacy_l1d_cache_amd = {
-    .type = DCACHE,
+    .type = DATA_CACHE,
     .level = 1,
     .size = 64 * KiB,
     .self_init = 1,
@@ -565,7 +565,7 @@ static CPUCacheInfo legacy_l1d_cache_amd = {
 
 /* L1 instruction cache: */
 static CPUCacheInfo legacy_l1i_cache = {
-    .type = ICACHE,
+    .type = INSTRUCTION_CACHE,
     .level = 1,
     .size = 32 * KiB,
     .self_init = 1,
@@ -578,7 +578,7 @@ static CPUCacheInfo legacy_l1i_cache = {
 
 /*FIXME: CPUID leaf 0x80000005 is inconsistent with leaves 2 & 4 */
 static CPUCacheInfo legacy_l1i_cache_amd = {
-    .type = ICACHE,
+    .type = INSTRUCTION_CACHE,
     .level = 1,
     .size = 64 * KiB,
     .self_init = 1,
@@ -849,6 +849,12 @@ static FeatureWordInfo feature_word_info[FEATURE_WORDS] = {
         },
         .cpuid_eax = 0x80000001, .cpuid_reg = R_ECX,
         .tcg_features = TCG_EXT3_FEATURES,
+        /*
+         * TOPOEXT is always allowed but can't be enabled blindly by
+         * "-cpu host", as it requires consistent cache topology info
+         * to be provided so it doesn't confuse guests.
+         */
+        .no_autoenable_flags = CPUID_EXT3_TOPOEXT,
     },
     [FEAT_C000_0001_EDX] = {
         .feat_names = {
@@ -868,7 +874,7 @@ static FeatureWordInfo feature_word_info[FEATURE_WORDS] = {
         .feat_names = {
             "kvmclock", "kvm-nopiodelay", "kvm-mmu", "kvmclock",
             "kvm-asyncpf", "kvm-steal-time", "kvm-pv-eoi", "kvm-pv-unhalt",
-            NULL, "kvm-pv-tlb-flush", NULL, NULL,
+            NULL, "kvm-pv-tlb-flush", NULL, "kvm-pv-ipi",
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
@@ -997,15 +1003,16 @@ static FeatureWordInfo feature_word_info[FEATURE_WORDS] = {
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL,
+            NULL, NULL, "pconfig", NULL,
             NULL, NULL, NULL, NULL,
             NULL, NULL, "spec-ctrl", NULL,
-            NULL, NULL, NULL, "ssbd",
+            NULL, "arch-capabilities", NULL, "ssbd",
         },
         .cpuid_eax = 7,
         .cpuid_needs_ecx = true, .cpuid_ecx = 0,
         .cpuid_reg = R_EDX,
         .tcg_features = TCG_7_0_EDX_FEATURES,
+        .unmigratable_flags = CPUID_7_0_EDX_ARCH_CAPABILITIES,
     },
     [FEAT_8000_0007_EDX] = {
         .feat_names = {
@@ -1027,7 +1034,7 @@ static FeatureWordInfo feature_word_info[FEATURE_WORDS] = {
         .feat_names = {
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL,
+            NULL, "wbnoinvd", NULL, NULL,
             "ibpb", NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL,
@@ -1310,7 +1317,7 @@ struct X86CPUDefinition {
 
 static CPUCaches epyc_cache_info = {
     .l1d_cache = &(CPUCacheInfo) {
-        .type = DCACHE,
+        .type = DATA_CACHE,
         .level = 1,
         .size = 32 * KiB,
         .line_size = 64,
@@ -1322,7 +1329,7 @@ static CPUCaches epyc_cache_info = {
         .no_invd_sharing = true,
     },
     .l1i_cache = &(CPUCacheInfo) {
-        .type = ICACHE,
+        .type = INSTRUCTION_CACHE,
         .level = 1,
         .size = 64 * KiB,
         .line_size = 64,
@@ -2378,6 +2385,121 @@ static X86CPUDefinition builtin_x86_defs[] = {
             CPUID_6_EAX_ARAT,
         .xlevel = 0x80000008,
         .model_id = "Intel Xeon Processor (Skylake, IBRS)",
+    },
+    {
+        .name = "Icelake-Client",
+        .level = 0xd,
+        .vendor = CPUID_VENDOR_INTEL,
+        .family = 6,
+        .model = 126,
+        .stepping = 0,
+        .features[FEAT_1_EDX] =
+            CPUID_VME | CPUID_SSE2 | CPUID_SSE | CPUID_FXSR | CPUID_MMX |
+            CPUID_CLFLUSH | CPUID_PSE36 | CPUID_PAT | CPUID_CMOV | CPUID_MCA |
+            CPUID_PGE | CPUID_MTRR | CPUID_SEP | CPUID_APIC | CPUID_CX8 |
+            CPUID_MCE | CPUID_PAE | CPUID_MSR | CPUID_TSC | CPUID_PSE |
+            CPUID_DE | CPUID_FP87,
+        .features[FEAT_1_ECX] =
+            CPUID_EXT_AVX | CPUID_EXT_XSAVE | CPUID_EXT_AES |
+            CPUID_EXT_POPCNT | CPUID_EXT_X2APIC | CPUID_EXT_SSE42 |
+            CPUID_EXT_SSE41 | CPUID_EXT_CX16 | CPUID_EXT_SSSE3 |
+            CPUID_EXT_PCLMULQDQ | CPUID_EXT_SSE3 |
+            CPUID_EXT_TSC_DEADLINE_TIMER | CPUID_EXT_FMA | CPUID_EXT_MOVBE |
+            CPUID_EXT_PCID | CPUID_EXT_F16C | CPUID_EXT_RDRAND,
+        .features[FEAT_8000_0001_EDX] =
+            CPUID_EXT2_LM | CPUID_EXT2_RDTSCP | CPUID_EXT2_NX |
+            CPUID_EXT2_SYSCALL,
+        .features[FEAT_8000_0001_ECX] =
+            CPUID_EXT3_ABM | CPUID_EXT3_LAHF_LM | CPUID_EXT3_3DNOWPREFETCH,
+        .features[FEAT_8000_0008_EBX] =
+            CPUID_8000_0008_EBX_WBNOINVD,
+        .features[FEAT_7_0_EBX] =
+            CPUID_7_0_EBX_FSGSBASE | CPUID_7_0_EBX_BMI1 |
+            CPUID_7_0_EBX_HLE | CPUID_7_0_EBX_AVX2 | CPUID_7_0_EBX_SMEP |
+            CPUID_7_0_EBX_BMI2 | CPUID_7_0_EBX_ERMS | CPUID_7_0_EBX_INVPCID |
+            CPUID_7_0_EBX_RTM | CPUID_7_0_EBX_RDSEED | CPUID_7_0_EBX_ADX |
+            CPUID_7_0_EBX_SMAP | CPUID_7_0_EBX_MPX | CPUID_7_0_EBX_INTEL_PT,
+        .features[FEAT_7_0_ECX] =
+            CPUID_7_0_ECX_VBMI | CPUID_7_0_ECX_UMIP | CPUID_7_0_ECX_PKU |
+            CPUID_7_0_ECX_OSPKE | CPUID_7_0_ECX_VBMI2 | CPUID_7_0_ECX_GFNI |
+            CPUID_7_0_ECX_VAES | CPUID_7_0_ECX_VPCLMULQDQ |
+            CPUID_7_0_ECX_AVX512VNNI | CPUID_7_0_ECX_AVX512BITALG |
+            CPUID_7_0_ECX_AVX512_VPOPCNTDQ,
+        .features[FEAT_7_0_EDX] =
+            CPUID_7_0_EDX_SPEC_CTRL | CPUID_7_0_EDX_SPEC_CTRL_SSBD,
+        /* Missing: XSAVES (not supported by some Linux versions,
+                * including v4.1 to v4.12).
+                * KVM doesn't yet expose any XSAVES state save component,
+                * and the only one defined in Skylake (processor tracing)
+                * probably will block migration anyway.
+                */
+        .features[FEAT_XSAVE] =
+            CPUID_XSAVE_XSAVEOPT | CPUID_XSAVE_XSAVEC |
+            CPUID_XSAVE_XGETBV1,
+        .features[FEAT_6_EAX] =
+            CPUID_6_EAX_ARAT,
+        .xlevel = 0x80000008,
+        .model_id = "Intel Core Processor (Icelake)",
+    },
+    {
+        .name = "Icelake-Server",
+        .level = 0xd,
+        .vendor = CPUID_VENDOR_INTEL,
+        .family = 6,
+        .model = 134,
+        .stepping = 0,
+        .features[FEAT_1_EDX] =
+            CPUID_VME | CPUID_SSE2 | CPUID_SSE | CPUID_FXSR | CPUID_MMX |
+            CPUID_CLFLUSH | CPUID_PSE36 | CPUID_PAT | CPUID_CMOV | CPUID_MCA |
+            CPUID_PGE | CPUID_MTRR | CPUID_SEP | CPUID_APIC | CPUID_CX8 |
+            CPUID_MCE | CPUID_PAE | CPUID_MSR | CPUID_TSC | CPUID_PSE |
+            CPUID_DE | CPUID_FP87,
+        .features[FEAT_1_ECX] =
+            CPUID_EXT_AVX | CPUID_EXT_XSAVE | CPUID_EXT_AES |
+            CPUID_EXT_POPCNT | CPUID_EXT_X2APIC | CPUID_EXT_SSE42 |
+            CPUID_EXT_SSE41 | CPUID_EXT_CX16 | CPUID_EXT_SSSE3 |
+            CPUID_EXT_PCLMULQDQ | CPUID_EXT_SSE3 |
+            CPUID_EXT_TSC_DEADLINE_TIMER | CPUID_EXT_FMA | CPUID_EXT_MOVBE |
+            CPUID_EXT_PCID | CPUID_EXT_F16C | CPUID_EXT_RDRAND,
+        .features[FEAT_8000_0001_EDX] =
+            CPUID_EXT2_LM | CPUID_EXT2_PDPE1GB | CPUID_EXT2_RDTSCP |
+            CPUID_EXT2_NX | CPUID_EXT2_SYSCALL,
+        .features[FEAT_8000_0001_ECX] =
+            CPUID_EXT3_ABM | CPUID_EXT3_LAHF_LM | CPUID_EXT3_3DNOWPREFETCH,
+        .features[FEAT_8000_0008_EBX] =
+            CPUID_8000_0008_EBX_WBNOINVD,
+        .features[FEAT_7_0_EBX] =
+            CPUID_7_0_EBX_FSGSBASE | CPUID_7_0_EBX_BMI1 |
+            CPUID_7_0_EBX_HLE | CPUID_7_0_EBX_AVX2 | CPUID_7_0_EBX_SMEP |
+            CPUID_7_0_EBX_BMI2 | CPUID_7_0_EBX_ERMS | CPUID_7_0_EBX_INVPCID |
+            CPUID_7_0_EBX_RTM | CPUID_7_0_EBX_RDSEED | CPUID_7_0_EBX_ADX |
+            CPUID_7_0_EBX_SMAP | CPUID_7_0_EBX_MPX | CPUID_7_0_EBX_CLWB |
+            CPUID_7_0_EBX_AVX512F | CPUID_7_0_EBX_AVX512DQ |
+            CPUID_7_0_EBX_AVX512BW | CPUID_7_0_EBX_AVX512CD |
+            CPUID_7_0_EBX_AVX512VL | CPUID_7_0_EBX_CLFLUSHOPT |
+            CPUID_7_0_EBX_INTEL_PT,
+        .features[FEAT_7_0_ECX] =
+            CPUID_7_0_ECX_VBMI | CPUID_7_0_ECX_UMIP | CPUID_7_0_ECX_PKU |
+            CPUID_7_0_ECX_OSPKE | CPUID_7_0_ECX_VBMI2 | CPUID_7_0_ECX_GFNI |
+            CPUID_7_0_ECX_VAES | CPUID_7_0_ECX_VPCLMULQDQ |
+            CPUID_7_0_ECX_AVX512VNNI | CPUID_7_0_ECX_AVX512BITALG |
+            CPUID_7_0_ECX_AVX512_VPOPCNTDQ | CPUID_7_0_ECX_LA57,
+        .features[FEAT_7_0_EDX] =
+            CPUID_7_0_EDX_PCONFIG | CPUID_7_0_EDX_SPEC_CTRL |
+            CPUID_7_0_EDX_SPEC_CTRL_SSBD,
+        /* Missing: XSAVES (not supported by some Linux versions,
+                * including v4.1 to v4.12).
+                * KVM doesn't yet expose any XSAVES state save component,
+                * and the only one defined in Skylake (processor tracing)
+                * probably will block migration anyway.
+                */
+        .features[FEAT_XSAVE] =
+            CPUID_XSAVE_XSAVEOPT | CPUID_XSAVE_XSAVEC |
+            CPUID_XSAVE_XGETBV1,
+        .features[FEAT_6_EAX] =
+            CPUID_6_EAX_ARAT,
+        .xlevel = 0x80000008,
+        .model_id = "Intel Xeon Processor (Icelake)",
     },
     {
         .name = "KnightsMill",
@@ -3758,6 +3880,9 @@ arch_query_cpu_model_expansion(CpuModelExpansionType type,
     }
 
     props = qdict_new();
+    ret->model = g_new0(CpuModelInfo, 1);
+    ret->model->props = QOBJECT(props);
+    ret->model->has_props = true;
 
     switch (type) {
     case CPU_MODEL_EXPANSION_TYPE_STATIC:
@@ -3778,15 +3903,9 @@ arch_query_cpu_model_expansion(CpuModelExpansionType type,
         goto out;
     }
 
-    if (!props) {
-        props = qdict_new();
-    }
     x86_cpu_to_dict(xc, props);
 
-    ret->model = g_new0(CpuModelInfo, 1);
     ret->model->name = g_strdup(base_name);
-    ret->model->props = QOBJECT(props);
-    ret->model->has_props = true;
 
 out:
     object_unref(OBJECT(xc));
@@ -5435,6 +5554,8 @@ static Property x86_cpu_properties[] = {
                      false),
     DEFINE_PROP_BOOL("vmware-cpuid-freq", X86CPU, vmware_cpuid_freq, true),
     DEFINE_PROP_BOOL("tcg-cpuid", X86CPU, expose_tcg, true),
+    DEFINE_PROP_BOOL("x-migrate-smi-count", X86CPU, migrate_smi_count,
+                     true),
     /*
      * lecacy_cache defaults to true unless the CPU model provides its
      * own cache information (see x86_cpu_load_def()).

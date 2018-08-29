@@ -43,7 +43,6 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
     "                suppress-vmdesc=on|off disables self-describing migration (default=off)\n"
     "                nvdimm=on|off controls NVDIMM support (default=off)\n"
     "                enforce-config-section=on|off enforce configuration section migration (default=off)\n"
-    "                s390-squash-mcss=on|off (deprecated) controls support for squashing into default css (default=off)\n"
     "                memory-encryption=@var{} memory encryption object to use (default=none)\n",
     QEMU_ARCH_ALL)
 STEXI
@@ -96,15 +95,6 @@ controls whether DEA wrapping keys will be created to allow
 execution of DEA cryptographic functions.  The default is on.
 @item nvdimm=on|off
 Enables or disables NVDIMM support. The default is off.
-@item s390-squash-mcss=on|off
-Enables or disables squashing subchannels into the default css.
-The default is off.
-NOTE: This property is deprecated and will be removed in future releases.
-The ``s390-squash-mcss=on`` property has been obsoleted by allowing the
-cssid to be chosen freely. Instead of squashing subchannels into the
-default channel subsystem image for guests that do not support multiple
-channel subsystems, all devices can be put into the default channel
-subsystem image.
 @item enforce-config-section=on|off
 If @option{enforce-config-section} is set to @var{on}, force migration
 code to send configuration section even if the machine-type sets the
@@ -804,9 +794,8 @@ ETEXI
 
 DEF("drive", HAS_ARG, QEMU_OPTION_drive,
     "-drive [file=file][,if=type][,bus=n][,unit=m][,media=d][,index=i]\n"
-    "       [,cyls=c,heads=h,secs=s[,trans=t]][,snapshot=on|off]\n"
     "       [,cache=writethrough|writeback|none|directsync|unsafe][,format=f]\n"
-    "       [,serial=s][,addr=A][,rerror=ignore|stop|report]\n"
+    "       [,snapshot=on|off][,rerror=ignore|stop|report]\n"
     "       [,werror=ignore|stop|report|enospc][,id=name][,aio=threads|native]\n"
     "       [,readonly=on|off][,copy-on-read=on|off]\n"
     "       [,discard=ignore|unmap][,detect-zeroes=on|off|unmap]\n"
@@ -847,10 +836,6 @@ This option defines where is connected the drive by using an index in the list
 of available connectors of a given interface type.
 @item media=@var{media}
 This option defines the type of the media: disk or cdrom.
-@item cyls=@var{c},heads=@var{h},secs=@var{s}[,trans=@var{t}]
-Force disk physical geometry and the optional BIOS translation (trans=none or
-lba). These parameters are deprecated, use the corresponding parameters
-of @code{-device} instead.
 @item snapshot=@var{snapshot}
 @var{snapshot} is "on" or "off" and controls snapshot mode for the given drive
 (see @option{-snapshot}).
@@ -884,13 +869,6 @@ The default mode is @option{cache=writeback}.
 Specify which disk @var{format} will be used rather than detecting
 the format.  Can be used to specify format=raw to avoid interpreting
 an untrusted format header.
-@item serial=@var{serial}
-This option specifies the serial number to assign to the device. This
-parameter is deprecated, use the corresponding parameter of @code{-device}
-instead.
-@item addr=@var{addr}
-Specify the controller's PCI address (if=virtio only). This parameter is
-deprecated, use the corresponding parameter of @code{-device} instead.
 @item werror=@var{action},rerror=@var{action}
 Specify which @var{action} to take on write and read errors. Valid actions are:
 "ignore" (ignore the error and try to continue), "stop" (pause QEMU),
@@ -1653,49 +1631,6 @@ and the websocket socket (if enabled). Setting TLS credentials
 will cause the VNC server socket to enable the VeNCrypt auth
 mechanism.  The credentials should have been previously created
 using the @option{-object tls-creds} argument.
-
-The @option{tls-creds} parameter obsoletes the @option{tls},
-@option{x509}, and @option{x509verify} options, and as such
-it is not permitted to set both new and old type options at
-the same time.
-
-@item tls
-
-Require that client use TLS when communicating with the VNC server. This
-uses anonymous TLS credentials so is susceptible to a man-in-the-middle
-attack. It is recommended that this option be combined with either the
-@option{x509} or @option{x509verify} options.
-
-This option is now deprecated in favor of using the @option{tls-creds}
-argument.
-
-@item x509=@var{/path/to/certificate/dir}
-
-Valid if @option{tls} is specified. Require that x509 credentials are used
-for negotiating the TLS session. The server will send its x509 certificate
-to the client. It is recommended that a password be set on the VNC server
-to provide authentication of the client when this is used. The path following
-this option specifies where the x509 certificates are to be loaded from.
-See the @ref{vnc_security} section for details on generating certificates.
-
-This option is now deprecated in favour of using the @option{tls-creds}
-argument.
-
-@item x509verify=@var{/path/to/certificate/dir}
-
-Valid if @option{tls} is specified. Require that x509 credentials are used
-for negotiating the TLS session. The server will send its x509 certificate
-to the client, and request that the client send its own x509 certificate.
-The server will validate the client's certificate against the CA certificate,
-and reject clients when validation fails. If the certificate authority is
-trusted, this is a sufficient authentication mechanism. You may still wish
-to set a password on the VNC server as a second authentication layer. The
-path following this option specifies where the x509 certificates are to
-be loaded from. See the @ref{vnc_security} section for details on generating
-certificates.
-
-This option is now deprecated in favour of using the @option{tls-creds}
-argument.
 
 @item sasl
 
@@ -3975,6 +3910,16 @@ Dump json-encoded vmstate information for current machine type to file
 in @var{file}
 ETEXI
 
+DEF("enable-sync-profile", 0, QEMU_OPTION_enable_sync_profile,
+    "-enable-sync-profile\n"
+    "                enable synchronization profiling\n",
+    QEMU_ARCH_ALL)
+STEXI
+@item -enable-sync-profile
+@findex -enable-sync-profile
+Enable synchronization profiling.
+ETEXI
+
 STEXI
 @end table
 ETEXI
@@ -4069,6 +4014,13 @@ QEMU mmap(2) @option{mem-path}, and accepts common suffixes, eg
 requires an alignment different than the default one used by QEMU, eg
 the device DAX /dev/dax0.0 requires 2M alignment rather than 4K. In
 such cases, users can specify the required alignment via this option.
+
+The @option{pmem} option specifies whether the backing file specified
+by @option{mem-path} is in host persistent memory that can be accessed
+using the SNIA NVM programming model (e.g. Intel NVDIMM).
+If @option{pmem} is set to 'on', QEMU will take necessary operations to
+guarantee the persistence of its own writes to @option{mem-path}
+(e.g. in vNVDIMM label emulation and live migration).
 
 @item -object memory-backend-ram,id=@var{id},merge=@var{on|off},dump=@var{on|off},share=@var{on|off},prealloc=@var{on|off},size=@var{size},host-nodes=@var{host-nodes},policy=@var{default|preferred|bind|interleave}
 

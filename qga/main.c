@@ -18,7 +18,6 @@
 #include <syslog.h>
 #include <sys/wait.h>
 #endif
-#include "qapi/qmp/json-streamer.h"
 #include "qapi/qmp/json-parser.h"
 #include "qapi/qmp/qdict.h"
 #include "qapi/qmp/qjson.h"
@@ -597,45 +596,41 @@ static void process_command(GAState *s, QDict *req)
 }
 
 /* handle requests/control events coming in over the channel */
-static void process_event(JSONMessageParser *parser, GQueue *tokens)
+static void process_event(void *opaque, QObject *obj, Error *err)
 {
-    GAState *s = container_of(parser, GAState, parser);
-    QDict *qdict;
-    Error *err = NULL;
+    GAState *s = opaque;
+    QDict *req, *rsp;
     int ret;
 
-    g_assert(s && parser);
-
     g_debug("process_event: called");
-    qdict = qobject_to(QDict, json_parser_parse_err(tokens, NULL, &err));
-    if (err || !qdict) {
-        qobject_unref(qdict);
-        if (!err) {
-            g_warning("failed to parse event: unknown error");
-            error_setg(&err, QERR_JSON_PARSING);
-        } else {
-            g_warning("failed to parse event: %s", error_get_pretty(err));
-        }
-        qdict = qmp_error_response(err);
+    assert(!obj != !err);
+    if (err) {
+        goto err;
+    }
+    req = qobject_to(QDict, obj);
+    if (!req) {
+        error_setg(&err, "Input must be a JSON object");
+        goto err;
+    }
+    if (!qdict_haskey(req, "execute")) {
+        g_warning("unrecognized payload format");
+        error_setg(&err, QERR_UNSUPPORTED);
+        goto err;
     }
 
-    /* handle host->guest commands */
-    if (qdict_haskey(qdict, "execute")) {
-        process_command(s, qdict);
-    } else {
-        if (!qdict_haskey(qdict, "error")) {
-            qobject_unref(qdict);
-            g_warning("unrecognized payload format");
-            error_setg(&err, QERR_UNSUPPORTED);
-            qdict = qmp_error_response(err);
-        }
-        ret = send_response(s, qdict);
-        if (ret < 0) {
-            g_warning("error sending error response: %s", strerror(-ret));
-        }
-    }
+    process_command(s, req);
+    qobject_unref(obj);
+    return;
 
-    qobject_unref(qdict);
+err:
+    g_warning("failed to parse event: %s", error_get_pretty(err));
+    rsp = qmp_error_response(err);
+    ret = send_response(s, rsp);
+    if (ret < 0) {
+        g_warning("error sending error response: %s", strerror(-ret));
+    }
+    qobject_unref(rsp);
+    qobject_unref(obj);
 }
 
 /* false return signals GAChannel to close the current client connection */
@@ -1320,7 +1315,7 @@ static int run_agent(GAState *s, GAConfig *config, int socket_activation)
     s->command_state = ga_command_state_new();
     ga_command_state_init(s, s->command_state);
     ga_command_state_init_all(s->command_state);
-    json_message_parser_init(&s->parser, process_event);
+    json_message_parser_init(&s->parser, process_event, s, NULL);
 
 #ifndef _WIN32
     if (!register_signal_handlers()) {

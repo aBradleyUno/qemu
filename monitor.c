@@ -58,7 +58,6 @@
 #include "qapi/qmp/qnum.h"
 #include "qapi/qmp/qstring.h"
 #include "qapi/qmp/qjson.h"
-#include "qapi/qmp/json-streamer.h"
 #include "qapi/qmp/json-parser.h"
 #include "qapi/qmp/qlist.h"
 #include "qom/object_interfaces.h"
@@ -290,7 +289,7 @@ static mon_cmd_t info_cmds[];
 
 QmpCommandList qmp_commands, qmp_cap_negotiation_commands;
 
-Monitor *cur_mon;
+__thread Monitor *cur_mon;
 
 static void monitor_command_cb(void *opaque, const char *cmdline,
                                void *readline_opaque);
@@ -633,7 +632,7 @@ static void monitor_qapi_event_handler(void *opaque);
  * applying any rate limiting if required.
  */
 static void
-monitor_qapi_event_queue(QAPIEvent event, QDict *qdict, Error **errp)
+monitor_qapi_event_queue_no_reenter(QAPIEvent event, QDict *qdict)
 {
     MonitorQAPIEventConf *evconf;
     MonitorQAPIEventState *evstate;
@@ -686,6 +685,48 @@ monitor_qapi_event_queue(QAPIEvent event, QDict *qdict, Error **errp)
     }
 
     qemu_mutex_unlock(&monitor_lock);
+}
+
+static void
+monitor_qapi_event_queue(QAPIEvent event, QDict *qdict, Error **errp)
+{
+    /*
+     * monitor_qapi_event_queue_no_reenter() is not reentrant: it
+     * would deadlock on monitor_lock.  Work around by queueing
+     * events in thread-local storage.
+     * TODO: remove this, make it re-enter safe.
+     */
+    typedef struct MonitorQapiEvent {
+        QAPIEvent event;
+        QDict *qdict;
+        QSIMPLEQ_ENTRY(MonitorQapiEvent) entry;
+    } MonitorQapiEvent;
+    static __thread QSIMPLEQ_HEAD(, MonitorQapiEvent) event_queue;
+    static __thread bool reentered;
+    MonitorQapiEvent *ev;
+
+    if (!reentered) {
+        QSIMPLEQ_INIT(&event_queue);
+    }
+
+    ev = g_new(MonitorQapiEvent, 1);
+    ev->qdict = qobject_ref(qdict);
+    ev->event = event;
+    QSIMPLEQ_INSERT_TAIL(&event_queue, ev, entry);
+    if (reentered) {
+        return;
+    }
+
+    reentered = true;
+
+    while ((ev = QSIMPLEQ_FIRST(&event_queue)) != NULL) {
+        QSIMPLEQ_REMOVE_HEAD(&event_queue, entry);
+        monitor_qapi_event_queue_no_reenter(ev->event, ev->qdict);
+        qobject_unref(ev->qdict);
+        g_free(ev);
+    }
+
+    reentered = false;
 }
 
 /*
@@ -1411,6 +1452,17 @@ static void hmp_info_opcount(Monitor *mon, const QDict *qdict)
     dump_opcount_info((FILE *)mon, monitor_fprintf);
 }
 #endif
+
+static void hmp_info_sync_profile(Monitor *mon, const QDict *qdict)
+{
+    int64_t max = qdict_get_try_int(qdict, "max", 10);
+    bool mean = qdict_get_try_bool(qdict, "mean", false);
+    bool coalesce = !qdict_get_try_bool(qdict, "no_coalesce", false);
+    enum QSPSortBy sort_by;
+
+    sort_by = mean ? QSP_SORT_BY_AVG_WAIT_TIME : QSP_SORT_BY_TOTAL_WAIT_TIME;
+    qsp_report((FILE *)mon, monitor_fprintf, max, sort_by, coalesce);
+}
 
 static void hmp_info_history(Monitor *mon, const QDict *qdict)
 {
@@ -4203,20 +4255,14 @@ static void monitor_qmp_bh_dispatcher(void *data)
 
 #define  QMP_REQ_QUEUE_LEN_MAX  (8)
 
-static void handle_qmp_command(JSONMessageParser *parser, GQueue *tokens)
+static void handle_qmp_command(void *opaque, QObject *req, Error *err)
 {
-    QObject *req, *id = NULL;
+    Monitor *mon = opaque;
+    QObject *id = NULL;
     QDict *qdict;
-    MonitorQMP *mon_qmp = container_of(parser, MonitorQMP, parser);
-    Monitor *mon = container_of(mon_qmp, Monitor, qmp);
-    Error *err = NULL;
     QMPRequest *req_obj;
 
-    req = json_parser_parse_err(tokens, NULL, &err);
-    if (!req && !err) {
-        /* json_parser_parse_err() sucks: can fail without setting @err */
-        error_setg(&err, QERR_JSON_PARSING);
-    }
+    assert(!req != !err);
 
     qdict = qobject_to(QDict, req);
     if (qdict) {
@@ -4235,6 +4281,8 @@ static void handle_qmp_command(JSONMessageParser *parser, GQueue *tokens)
         trace_monitor_qmp_cmd_out_of_band(qobject_get_try_str(id)
                                           ?: "");
         monitor_qmp_dispatch(mon, req, id);
+        qobject_unref(req);
+        qobject_unref(id);
         return;
     }
 
@@ -4410,7 +4458,8 @@ static void monitor_qmp_event(void *opaque, int event)
         monitor_qmp_response_flush(mon);
         monitor_qmp_cleanup_queues(mon);
         json_message_parser_destroy(&mon->qmp.parser);
-        json_message_parser_init(&mon->qmp.parser, handle_qmp_command);
+        json_message_parser_init(&mon->qmp.parser, handle_qmp_command,
+                                 mon, NULL);
         mon_refcount--;
         monitor_fdsets_cleanup();
         break;
@@ -4628,7 +4677,8 @@ void monitor_init(Chardev *chr, int flags)
 
     if (monitor_is_qmp(mon)) {
         qemu_chr_fe_set_echo(&mon->chr, true);
-        json_message_parser_init(&mon->qmp.parser, handle_qmp_command);
+        json_message_parser_init(&mon->qmp.parser, handle_qmp_command,
+                                 mon, NULL);
         if (mon->use_io_thread) {
             /*
              * Make sure the old iowatch is gone.  It's possible when

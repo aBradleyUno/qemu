@@ -75,13 +75,11 @@ typedef struct testdef {
 static testdef_t tests[] = {
     { "alpha", "clipper", "", "PCI:" },
     { "ppc", "ppce500", "", "U-Boot" },
-    { "ppc", "prep", "-m 96", "Memory size: 96 MB" },
     { "ppc", "40p", "-boot d", "Booting from device d" },
     { "ppc", "g3beige", "", "PowerPC,750" },
     { "ppc", "mac99", "", "PowerPC,G4" },
     { "ppc", "sam460ex", "-m 256", "DRAM:  256 MiB" },
     { "ppc64", "ppce500", "", "U-Boot" },
-    { "ppc64", "prep", "-boot e", "Booting from device e" },
     { "ppc64", "40p", "-m 192", "Memory size: 192 MB" },
     { "ppc64", "mac99", "", "PowerPC,970FX" },
     { "ppc64", "pseries", "", "Open Firmware" },
@@ -116,8 +114,8 @@ static bool check_guest_output(const testdef_t *test, int fd)
     int i, nbr = 0, pos = 0, ccnt;
     char ch;
 
-    /* Poll serial output... Wait at most 60 seconds */
-    for (i = 0; i < 6000; ++i) {
+    /* Poll serial output... Wait at most 360 seconds */
+    for (i = 0; i < 36000; ++i) {
         ccnt = 0;
         while (ccnt++ < 512 && (nbr = read(fd, &ch, 1)) == 1) {
             if (ch == test->expect[pos]) {
@@ -172,11 +170,11 @@ static void test_machine(const void *data)
      * Make sure that this test uses tcg if available: It is used as a
      * fast-enough smoketest for that.
      */
-    global_qtest = qtest_startf("%s %s -M %s,accel=tcg:kvm "
-                                "-chardev file,id=serial0,path=%s "
-                                "-no-shutdown -serial chardev:serial0 %s",
-                                codeparam, code ? codetmp : "",
-                                test->machine, serialtmp, test->extra);
+    global_qtest = qtest_initf("%s %s -M %s,accel=tcg:kvm "
+                               "-chardev file,id=serial0,path=%s "
+                               "-no-shutdown -serial chardev:serial0 %s",
+                               codeparam, code ? codetmp : "",
+                               test->machine, serialtmp, test->extra);
     if (code) {
         unlink(codetmp);
     }

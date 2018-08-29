@@ -864,6 +864,9 @@ struct ARMCPU {
 
     /* Used to synchronize KVM and QEMU in-kernel device levels */
     uint8_t device_irq_level;
+
+    /* Used to set the maximum vector length the cpu will support.  */
+    uint32_t sve_max_vq;
 };
 
 static inline ARMCPU *arm_env_get_cpu(CPUARMState *env)
@@ -1236,6 +1239,12 @@ static inline void xpsr_write(CPUARMState *env, uint32_t val, uint32_t mask)
 #define HCR_RW        (1ULL << 31)
 #define HCR_CD        (1ULL << 32)
 #define HCR_ID        (1ULL << 33)
+#define HCR_E2H       (1ULL << 34)
+/*
+ * When we actually implement ARMv8.1-VHE we should add HCR_E2H to
+ * HCR_MASK and then clear it again if the feature bit is not set in
+ * hcr_write().
+ */
 #define HCR_MASK      ((1ULL << 34) - 1)
 
 #define SCR_NS                (1U << 0)
@@ -1267,7 +1276,7 @@ void vfp_set_fpscr(CPUARMState *env, uint32_t val);
  * we store the underlying state in fpscr and just mask on read/write.
  */
 #define FPSR_MASK 0xf800009f
-#define FPCR_MASK 0x07f79f00
+#define FPCR_MASK 0x07ff9f00
 
 #define FPCR_FZ16   (1 << 19)   /* ARMv8.2+, FP16 flush-to-zero */
 #define FPCR_FZ     (1 << 24)   /* Flush-to-zero enable bit */
@@ -1318,14 +1327,14 @@ enum arm_cpu_mode {
 #define ARM_VFP_FPINST2 10
 
 /* iwMMXt coprocessor control registers.  */
-#define ARM_IWMMXT_wCID		0
-#define ARM_IWMMXT_wCon		1
-#define ARM_IWMMXT_wCSSF	2
-#define ARM_IWMMXT_wCASF	3
-#define ARM_IWMMXT_wCGR0	8
-#define ARM_IWMMXT_wCGR1	9
-#define ARM_IWMMXT_wCGR2	10
-#define ARM_IWMMXT_wCGR3	11
+#define ARM_IWMMXT_wCID  0
+#define ARM_IWMMXT_wCon  1
+#define ARM_IWMMXT_wCSSF 2
+#define ARM_IWMMXT_wCASF 3
+#define ARM_IWMMXT_wCGR0 8
+#define ARM_IWMMXT_wCGR1 9
+#define ARM_IWMMXT_wCGR2 10
+#define ARM_IWMMXT_wCGR3 11
 
 /* V7M CCR bits */
 FIELD(V7M_CCR, NONBASETHRDENA, 0, 1)
@@ -2241,6 +2250,54 @@ bool write_cpustate_to_list(ARMCPU *cpu);
 #  define TARGET_VIRT_ADDR_SPACE_BITS 32
 #endif
 
+/**
+ * arm_hcr_el2_imo(): Return the effective value of HCR_EL2.IMO.
+ * Depending on the values of HCR_EL2.E2H and TGE, this may be
+ * "behaves as 1 for all purposes other than direct read/write" or
+ * "behaves as 0 for all purposes other than direct read/write"
+ */
+static inline bool arm_hcr_el2_imo(CPUARMState *env)
+{
+    switch (env->cp15.hcr_el2 & (HCR_TGE | HCR_E2H)) {
+    case HCR_TGE:
+        return true;
+    case HCR_TGE | HCR_E2H:
+        return false;
+    default:
+        return env->cp15.hcr_el2 & HCR_IMO;
+    }
+}
+
+/**
+ * arm_hcr_el2_fmo(): Return the effective value of HCR_EL2.FMO.
+ */
+static inline bool arm_hcr_el2_fmo(CPUARMState *env)
+{
+    switch (env->cp15.hcr_el2 & (HCR_TGE | HCR_E2H)) {
+    case HCR_TGE:
+        return true;
+    case HCR_TGE | HCR_E2H:
+        return false;
+    default:
+        return env->cp15.hcr_el2 & HCR_FMO;
+    }
+}
+
+/**
+ * arm_hcr_el2_amo(): Return the effective value of HCR_EL2.AMO.
+ */
+static inline bool arm_hcr_el2_amo(CPUARMState *env)
+{
+    switch (env->cp15.hcr_el2 & (HCR_TGE | HCR_E2H)) {
+    case HCR_TGE:
+        return true;
+    case HCR_TGE | HCR_E2H:
+        return false;
+    default:
+        return env->cp15.hcr_el2 & HCR_AMO;
+    }
+}
+
 static inline bool arm_excp_unmasked(CPUState *cs, unsigned int excp_idx,
                                      unsigned int target_el)
 {
@@ -2268,13 +2325,13 @@ static inline bool arm_excp_unmasked(CPUState *cs, unsigned int excp_idx,
         break;
 
     case EXCP_VFIQ:
-        if (secure || !(env->cp15.hcr_el2 & HCR_FMO)) {
+        if (secure || !arm_hcr_el2_fmo(env) || (env->cp15.hcr_el2 & HCR_TGE)) {
             /* VFIQs are only taken when hypervized and non-secure.  */
             return false;
         }
         return !(env->daif & PSTATE_F);
     case EXCP_VIRQ:
-        if (secure || !(env->cp15.hcr_el2 & HCR_IMO)) {
+        if (secure || !arm_hcr_el2_imo(env) || (env->cp15.hcr_el2 & HCR_TGE)) {
             /* VIRQs are only taken when hypervized and non-secure.  */
             return false;
         }
@@ -2313,7 +2370,7 @@ static inline bool arm_excp_unmasked(CPUState *cs, unsigned int excp_idx,
                  * to the CPSR.F setting otherwise we further assess the state
                  * below.
                  */
-                hcr = (env->cp15.hcr_el2 & HCR_FMO);
+                hcr = arm_hcr_el2_fmo(env);
                 scr = (env->cp15.scr_el3 & SCR_FIQ);
 
                 /* When EL3 is 32-bit, the SCR.FW bit controls whether the
@@ -2330,7 +2387,7 @@ static inline bool arm_excp_unmasked(CPUState *cs, unsigned int excp_idx,
                  * when setting the target EL, so it does not have a further
                  * affect here.
                  */
-                hcr = (env->cp15.hcr_el2 & HCR_IMO);
+                hcr = arm_hcr_el2_imo(env);
                 scr = false;
                 break;
             default:

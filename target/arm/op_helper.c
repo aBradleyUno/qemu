@@ -33,6 +33,20 @@ static void raise_exception(CPUARMState *env, uint32_t excp,
 {
     CPUState *cs = CPU(arm_env_get_cpu(env));
 
+    if ((env->cp15.hcr_el2 & HCR_TGE) &&
+        target_el == 1 && !arm_is_secure(env)) {
+        /*
+         * Redirect NS EL1 exceptions to NS EL2. These are reported with
+         * their original syndrome register value, with the exception of
+         * SIMD/FP access traps, which are reported as uncategorized
+         * (see DDI0478C.a D1.10.4)
+         */
+        target_el = 2;
+        if (syndrome >> ARM_EL_EC_SHIFT == EC_ADVSIMDFPACCESSTRAP) {
+            syndrome = syn_uncategorized();
+        }
+    }
+
     assert(!excp_is_internal(excp));
     cs->exception_index = excp;
     env->exception.syndrome = syndrome;
@@ -597,6 +611,14 @@ static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
      */
     int curmode = env->uncached_cpsr & CPSR_M;
 
+    if (regno == 17) {
+        /* ELR_Hyp: a special case because access from tgtmode is OK */
+        if (curmode != ARM_CPU_MODE_HYP && curmode != ARM_CPU_MODE_MON) {
+            goto undef;
+        }
+        return;
+    }
+
     if (curmode == tgtmode) {
         goto undef;
     }
@@ -624,17 +646,9 @@ static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
     }
 
     if (tgtmode == ARM_CPU_MODE_HYP) {
-        switch (regno) {
-        case 17: /* ELR_Hyp */
-            if (curmode != ARM_CPU_MODE_HYP && curmode != ARM_CPU_MODE_MON) {
-                goto undef;
-            }
-            break;
-        default:
-            if (curmode != ARM_CPU_MODE_MON) {
-                goto undef;
-            }
-            break;
+        /* SPSR_Hyp, r13_hyp: accessible from Monitor mode only */
+        if (curmode != ARM_CPU_MODE_MON) {
+            goto undef;
         }
     }
 

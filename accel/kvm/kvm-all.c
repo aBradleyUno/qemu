@@ -39,6 +39,7 @@
 #include "trace.h"
 #include "hw/irq.h"
 #include "sysemu/sev.h"
+#include "sysemu/balloon.h"
 
 #include "hw/boards.h"
 
@@ -1638,10 +1639,8 @@ static int kvm_init(MachineState *ms)
         s->irq_set_ioctl = KVM_IRQ_LINE_STATUS;
     }
 
-#ifdef KVM_CAP_READONLY_MEM
     kvm_readonly_mem_allowed =
         (kvm_check_extension(s, KVM_CAP_READONLY_MEM) > 0);
-#endif
 
     kvm_eventfds_allowed =
         (kvm_check_extension(s, KVM_CAP_IOEVENTFD) > 0);
@@ -1698,6 +1697,9 @@ static int kvm_init(MachineState *ms)
     s->many_ioeventfds = kvm_check_many_ioeventfds();
 
     s->sync_mmu = !!kvm_vm_check_extension(kvm_state, KVM_CAP_SYNC_MMU);
+    if (!s->sync_mmu) {
+        qemu_balloon_inhibit(true);
+    }
 
     return 0;
 

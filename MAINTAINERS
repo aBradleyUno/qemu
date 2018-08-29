@@ -187,7 +187,7 @@ F: disas/microblaze.c
 
 MIPS
 M: Aurelien Jarno <aurelien@aurel32.net>
-M: Aleksandar Markovic <aleksandar.markovic@mips.com>
+M: Aleksandar Markovic <amarkovic@wavecomp.com>
 S: Maintained
 F: target/mips/
 F: hw/mips/
@@ -289,6 +289,7 @@ F: tests/tcg/i386/
 F: tests/tcg/x86_64/
 F: hw/i386/
 F: disas/i386.c
+F: docs/qemu-cpu-models.texi
 T: git git://github.com/ehabkost/qemu.git x86-next
 
 Xtensa
@@ -444,21 +445,30 @@ F: hw/char/pl011.c
 F: include/hw/char/pl011.h
 F: hw/display/pl110*
 F: hw/dma/pl080.c
+F: include/hw/dma/pl080.h
 F: hw/dma/pl330.c
 F: hw/gpio/pl061.c
 F: hw/input/pl050.c
 F: hw/intc/pl190.c
 F: hw/sd/pl181.c
+F: hw/ssi/pl022.c
+F: include/hw/ssi/pl022.h
 F: hw/timer/pl031.c
 F: include/hw/arm/primecell.h
 F: hw/timer/cmsdk-apb-timer.c
 F: include/hw/timer/cmsdk-apb-timer.h
+F: hw/timer/cmsdk-apb-dualtimer.c
+F: include/hw/timer/cmsdk-apb-dualtimer.h
 F: hw/char/cmsdk-apb-uart.c
 F: include/hw/char/cmsdk-apb-uart.h
+F: hw/watchdog/cmsdk-apb-watchdog.c
+F: include/hw/watchdog/cmsdk-apb-watchdog.h
 F: hw/misc/tz-ppc.c
 F: include/hw/misc/tz-ppc.h
 F: hw/misc/tz-mpc.c
 F: include/hw/misc/tz-mpc.h
+F: hw/misc/tz-msc.c
+F: include/hw/misc/tz-msc.h
 
 ARM cores
 M: Peter Maydell <peter.maydell@linaro.org>
@@ -533,6 +543,10 @@ F: hw/misc/mps2-*.c
 F: include/hw/misc/mps2-*.h
 F: hw/arm/iotkit.c
 F: include/hw/arm/iotkit.h
+F: hw/misc/iotkit-sysctl.c
+F: include/hw/misc/iotkit-sysctl.h
+F: hw/misc/iotkit-sysinfo.c
+F: include/hw/misc/iotkit-sysinfo.h
 
 Musicpal
 M: Jan Kiszka <jan.kiszka@web.de>
@@ -718,7 +732,7 @@ S: Maintained
 F: hw/mips/mips_malta.c
 
 Mipssim
-M: Aleksandar Markovic <aleksandar.markovic@mips.com>
+M: Aleksandar Markovic <amarkovic@wavecomp.com>
 S: Odd Fixes
 F: hw/mips/mips_mipssim.c
 F: hw/net/mipsnet.c
@@ -729,14 +743,15 @@ S: Maintained
 F: hw/mips/mips_r4k.c
 
 Fulong 2E
-M: Aleksandar Markovic <aleksandar.markovic@mips.com>
+M: Aleksandar Markovic <amarkovic@wavecomp.com>
 S: Odd Fixes
 F: hw/mips/mips_fulong2e.c
 F: hw/isa/vt82c686.c
+
 F: include/hw/isa/vt82c686.h
 
 Boston
-M: Paul Burton <paul.burton@mips.com>
+M: Paul Burton <pburton@wavecomp.com>
 S: Maintained
 F: hw/core/loader-fit.c
 F: hw/mips/boston.c
@@ -1323,6 +1338,12 @@ F: hw/core/generic-loader.c
 F: include/hw/core/generic-loader.h
 F: docs/generic-loader.txt
 
+Intel Hexadecimal Object File Loader
+M: Su Hang <suhang16@mails.ucas.ac.cn>
+S: Maintained
+F: tests/hexloader-test.c
+F: tests/hex-loader-check-data/test.hex
+
 CHRP NVRAM
 M: Thomas Huth <thuth@redhat.com>
 S: Maintained
@@ -1555,6 +1576,7 @@ S: Odd Fixes
 F: ui/
 F: include/ui/
 F: qapi/ui.json
+F: util/drm.c
 
 Cocoa graphics
 M: Peter Maydell <peter.maydell@linaro.org>
@@ -1685,7 +1707,6 @@ F: qom/
 X: qom/cpu.c
 F: tests/check-qom-interface.c
 F: tests/check-qom-proplist.c
-F: tests/qom-test.c
 
 QMP
 M: Markus Armbruster <armbru@redhat.com>
@@ -1695,7 +1716,18 @@ F: monitor.c
 F: docs/devel/*qmp-*
 F: scripts/qmp/
 F: tests/qmp-test.c
+F: tests/qmp-cmd-test.c
 T: git git://repo.or.cz/qemu/armbru.git qapi-next
+
+qtest
+M: Paolo Bonzini <pbonzini@redhat.com>
+M: Thomas Huth <thuth@redhat.com>
+M: Laurent Vivier <lvivier@redhat.com>
+S: Maintained
+F: qtest.c
+F: tests/libqtest.*
+F: tests/libqos/
+F: tests/*-test.c
 
 Register API
 M: Alistair Francis <alistair@alistair23.me>

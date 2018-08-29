@@ -738,6 +738,17 @@ static void do_cpu_reset(void *opaque)
                 }
             }
 
+            if (!env->aarch64 && !info->secure_boot &&
+                arm_feature(env, ARM_FEATURE_EL2)) {
+                /*
+                 * This is an AArch32 boot not to Secure state, and
+                 * we have Hyp mode available, so boot the kernel into
+                 * Hyp mode. This is not how the CPU comes out of reset,
+                 * so we need to manually put it there.
+                 */
+                cpsr_write(env, ARM_CPU_MODE_HYP, CPSR_M, CPSRWriteRaw);
+            }
+
             if (cs == first_cpu) {
                 AddressSpace *as = arm_boot_address_space(cpu, info);
 
@@ -820,9 +831,9 @@ static int do_arm_linux_init(Object *obj, void *opaque)
     return 0;
 }
 
-static uint64_t arm_load_elf(struct arm_boot_info *info, uint64_t *pentry,
-                             uint64_t *lowaddr, uint64_t *highaddr,
-                             int elf_machine, AddressSpace *as)
+static int64_t arm_load_elf(struct arm_boot_info *info, uint64_t *pentry,
+                            uint64_t *lowaddr, uint64_t *highaddr,
+                            int elf_machine, AddressSpace *as)
 {
     bool elf_is64;
     union {
@@ -831,7 +842,7 @@ static uint64_t arm_load_elf(struct arm_boot_info *info, uint64_t *pentry,
     } elf_header;
     int data_swab = 0;
     bool big_endian;
-    uint64_t ret = -1;
+    int64_t ret = -1;
     Error *err = NULL;
 
 

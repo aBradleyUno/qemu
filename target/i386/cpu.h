@@ -354,6 +354,8 @@ typedef enum X86Seg {
 #define MSR_TSC_ADJUST                  0x0000003b
 #define MSR_IA32_SPEC_CTRL              0x48
 #define MSR_VIRT_SSBD                   0xc001011f
+#define MSR_IA32_PRED_CMD               0x49
+#define MSR_IA32_ARCH_CAPABILITIES      0x10a
 #define MSR_IA32_TSCDEADLINE            0x6e0
 
 #define FEATURE_CONTROL_LOCKED                    (1<<0)
@@ -687,9 +689,13 @@ typedef uint32_t FeatureWordArray[FEATURE_WORDS];
 
 #define CPUID_7_0_EDX_AVX512_4VNNIW (1U << 2) /* AVX512 Neural Network Instructions */
 #define CPUID_7_0_EDX_AVX512_4FMAPS (1U << 3) /* AVX512 Multiply Accumulation Single Precision */
+#define CPUID_7_0_EDX_PCONFIG (1U << 18)       /* Platform Configuration */
 #define CPUID_7_0_EDX_SPEC_CTRL     (1U << 26) /* Speculation Control */
+#define CPUID_7_0_EDX_ARCH_CAPABILITIES (1U << 29)  /*Arch Capabilities*/
 #define CPUID_7_0_EDX_SPEC_CTRL_SSBD  (1U << 31) /* Speculative Store Bypass Disable */
 
+#define CPUID_8000_0008_EBX_WBNOINVD  (1U << 9)  /* Write back and
+                                                                             do not invalidate cache */
 #define CPUID_8000_0008_EBX_IBPB    (1U << 12) /* Indirect Branch Prediction Barrier */
 
 #define CPUID_XSAVE_XSAVEOPT   (1U << 0)
@@ -1050,8 +1056,8 @@ typedef enum TPRAccess {
 /* Cache information data structures: */
 
 enum CacheType {
-    DCACHE,
-    ICACHE,
+    DATA_CACHE,
+    INSTRUCTION_CACHE,
     UNIFIED_CACHE
 };
 
@@ -1379,6 +1385,7 @@ struct X86CPU {
     bool expose_kvm;
     bool expose_tcg;
     bool migratable;
+    bool migrate_smi_count;
     bool max_features; /* Enable all supported features automatically */
     uint32_t apic_id;
 
@@ -1508,6 +1515,8 @@ int cpu_x86_support_mca_broadcast(CPUX86State *env);
 int cpu_get_pic_interrupt(CPUX86State *s);
 /* MSDOS compatibility mode FPU exception support */
 void cpu_set_ferr(CPUX86State *s);
+/* mpx_helper.c */
+void cpu_sync_bndcs_hflags(CPUX86State *env);
 
 /* this function must always be used to load data in the segment
    cache: it synchronizes the hflags with the segment cache values */
@@ -1550,6 +1559,8 @@ static inline void cpu_x86_load_seg_cache(CPUX86State *env,
 #error HF_CPL_MASK is hardcoded
 #endif
             env->hflags = (env->hflags & ~HF_CPL_MASK) | cpl;
+            /* Possibly switch between BNDCFGS and BNDCFGU */
+            cpu_sync_bndcs_hflags(env);
         }
         new_hflags = (env->segs[R_SS].flags & DESC_B_MASK)
             >> (DESC_B_SHIFT - HF_SS32_SHIFT);
@@ -1881,9 +1892,6 @@ void apic_handle_tpr_access_report(DeviceState *d, target_ulong ip,
  * are already present in the kvm_default_props table.
  */
 void x86_cpu_change_kvm_default(const char *prop, const char *value);
-
-/* mpx_helper.c */
-void cpu_sync_bndcs_hflags(CPUX86State *env);
 
 /* Return name of 32-bit register, from a R_* constant */
 const char *get_register_name_32(unsigned int reg);

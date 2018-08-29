@@ -40,26 +40,6 @@ which is the default.
 The ``-no-kvm'' argument is now a synonym for setting
 ``-machine accel=tcg''.
 
-@subsection -vnc tls (since 2.5.0)
-
-The ``-vnc tls'' argument is now a synonym for setting
-``-object tls-creds-anon,id=tls0'' combined with
-``-vnc tls-creds=tls0'
-
-@subsection -vnc x509 (since 2.5.0)
-
-The ``-vnc x509=/path/to/certs'' argument is now a
-synonym for setting
-``-object tls-creds-x509,dir=/path/to/certs,id=tls0,verify-peer=no''
-combined with ``-vnc tls-creds=tls0'
-
-@subsection -vnc x509verify (since 2.5.0)
-
-The ``-vnc x509verify=/path/to/certs'' argument is now a
-synonym for setting
-``-object tls-creds-x509,dir=/path/to/certs,id=tls0,verify-peer=yes''
-combined with ``-vnc tls-creds=tls0'
-
 @subsection -tftp (since 2.6.0)
 
 The ``-tftp /some/dir'' argument is replaced by either
@@ -94,21 +74,6 @@ with ``-device ...,netdev=x''), or ``-nic user,smb=/some/dir''
 (for embedded NICs). The new syntax allows different settings to be
 provided per NIC.
 
-@subsection -drive cyls=...,heads=...,secs=...,trans=... (since 2.10.0)
-
-The drive geometry arguments are replaced by the the geometry arguments
-that can be specified with the ``-device'' parameter.
-
-@subsection -drive serial=... (since 2.10.0)
-
-The drive serial argument is replaced by the the serial argument
-that can be specified with the ``-device'' parameter.
-
-@subsection -drive addr=... (since 2.10.0)
-
-The drive addr argument is replaced by the the addr argument
-that can be specified with the ``-device'' parameter.
-
 @subsection -usbdevice (since 2.10.0)
 
 The ``-usbdevice DEV'' argument is now a synonym for setting
@@ -125,14 +90,6 @@ The ``-nodefconfig`` argument is a synonym for ``-no-user-config``.
 
 The @option{--balloon virtio} argument has been superseded by
 @option{--device virtio-balloon}.
-
-@subsection -machine s390-squash-mcss=on|off (since 2.12.0)
-
-The ``s390-squash-mcss=on`` property has been obsoleted by allowing the
-cssid to be chosen freely. Instead of squashing subchannels into the
-default channel subsystem image for guests that do not support multiple
-channel subsystems, all devices can be put into the default channel
-subsystem image.
 
 @subsection -fsdev handle (since 2.12.0)
 
@@ -217,6 +174,12 @@ support page sizes < 4096 any longer.
 
 These machine types are very old and likely can not be used for live migration
 from old QEMU versions anymore. A newer machine type should be used instead.
+
+@subsection prep (PowerPC) (since 3.1)
+
+This machine type uses an unmaintained firmware, broken in lots of ways,
+and unable to start post-2004 operating systems. 40p machine type should be
+used instead.
 
 @section Device options
 

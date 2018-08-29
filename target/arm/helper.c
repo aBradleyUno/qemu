@@ -17,6 +17,7 @@
 #include "exec/semihost.h"
 #include "sysemu/kvm.h"
 #include "fpu/softfloat.h"
+#include "qemu/range.h"
 
 #define ARM_CPU_FREQ 1000000000 /* FIXME: 1 GHz, should be configurable */
 
@@ -443,9 +444,11 @@ static CPAccessResult access_tdosa(CPUARMState *env, const ARMCPRegInfo *ri,
                                    bool isread)
 {
     int el = arm_current_el(env);
+    bool mdcr_el2_tdosa = (env->cp15.mdcr_el2 & MDCR_TDOSA) ||
+        (env->cp15.mdcr_el2 & MDCR_TDE) ||
+        (env->cp15.hcr_el2 & HCR_TGE);
 
-    if (el < 2 && (env->cp15.mdcr_el2 & MDCR_TDOSA)
-        && !arm_is_secure_below_el3(env)) {
+    if (el < 2 && mdcr_el2_tdosa && !arm_is_secure_below_el3(env)) {
         return CP_ACCESS_TRAP_EL2;
     }
     if (el < 3 && (env->cp15.mdcr_el3 & MDCR_TDOSA)) {
@@ -461,9 +464,11 @@ static CPAccessResult access_tdra(CPUARMState *env, const ARMCPRegInfo *ri,
                                   bool isread)
 {
     int el = arm_current_el(env);
+    bool mdcr_el2_tdra = (env->cp15.mdcr_el2 & MDCR_TDRA) ||
+        (env->cp15.mdcr_el2 & MDCR_TDE) ||
+        (env->cp15.hcr_el2 & HCR_TGE);
 
-    if (el < 2 && (env->cp15.mdcr_el2 & MDCR_TDRA)
-        && !arm_is_secure_below_el3(env)) {
+    if (el < 2 && mdcr_el2_tdra && !arm_is_secure_below_el3(env)) {
         return CP_ACCESS_TRAP_EL2;
     }
     if (el < 3 && (env->cp15.mdcr_el3 & MDCR_TDA)) {
@@ -479,9 +484,11 @@ static CPAccessResult access_tda(CPUARMState *env, const ARMCPRegInfo *ri,
                                   bool isread)
 {
     int el = arm_current_el(env);
+    bool mdcr_el2_tda = (env->cp15.mdcr_el2 & MDCR_TDA) ||
+        (env->cp15.mdcr_el2 & MDCR_TDE) ||
+        (env->cp15.hcr_el2 & HCR_TGE);
 
-    if (el < 2 && (env->cp15.mdcr_el2 & MDCR_TDA)
-        && !arm_is_secure_below_el3(env)) {
+    if (el < 2 && mdcr_el2_tda && !arm_is_secure_below_el3(env)) {
         return CP_ACCESS_TRAP_EL2;
     }
     if (el < 3 && (env->cp15.mdcr_el3 & MDCR_TDA)) {
@@ -3773,15 +3780,19 @@ static const ARMCPRegInfo v8_cp_reginfo[] = {
 
 /* Used to describe the behaviour of EL2 regs when EL2 does not exist.  */
 static const ARMCPRegInfo el3_no_el2_cp_reginfo[] = {
-    { .name = "VBAR_EL2", .state = ARM_CP_STATE_AA64,
+    { .name = "VBAR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 12, .crm = 0, .opc2 = 0,
       .access = PL2_RW,
       .readfn = arm_cp_read_zero, .writefn = arm_cp_write_ignore },
-    { .name = "HCR_EL2", .state = ARM_CP_STATE_AA64,
+    { .name = "HCR_EL2", .state = ARM_CP_STATE_BOTH,
       .type = ARM_CP_NO_RAW,
       .opc0 = 3, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 0,
       .access = PL2_RW,
-      .readfn = arm_cp_read_zero, .writefn = arm_cp_write_ignore },
+      .type = ARM_CP_CONST, .resetvalue = 0 },
+    { .name = "ESR_EL2", .state = ARM_CP_STATE_BOTH,
+      .opc0 = 3, .opc1 = 4, .crn = 5, .crm = 2, .opc2 = 0,
+      .access = PL2_RW,
+      .type = ARM_CP_CONST, .resetvalue = 0 },
     { .name = "CPTR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 2,
       .access = PL2_RW, .type = ARM_CP_CONST, .resetvalue = 0 },
@@ -3790,14 +3801,14 @@ static const ARMCPRegInfo el3_no_el2_cp_reginfo[] = {
       .access = PL2_RW, .type = ARM_CP_CONST,
       .resetvalue = 0 },
     { .name = "HMAIR1", .state = ARM_CP_STATE_AA32,
-      .opc1 = 4, .crn = 10, .crm = 2, .opc2 = 1,
+      .cp = 15, .opc1 = 4, .crn = 10, .crm = 2, .opc2 = 1,
       .access = PL2_RW, .type = ARM_CP_CONST, .resetvalue = 0 },
     { .name = "AMAIR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 10, .crm = 3, .opc2 = 0,
       .access = PL2_RW, .type = ARM_CP_CONST,
       .resetvalue = 0 },
-    { .name = "HMAIR1", .state = ARM_CP_STATE_AA32,
-      .opc1 = 4, .crn = 10, .crm = 3, .opc2 = 1,
+    { .name = "HAMAIR1", .state = ARM_CP_STATE_AA32,
+      .cp = 15, .opc1 = 4, .crn = 10, .crm = 3, .opc2 = 1,
       .access = PL2_RW, .type = ARM_CP_CONST,
       .resetvalue = 0 },
     { .name = "AFSR0_EL2", .state = ARM_CP_STATE_BOTH,
@@ -3866,6 +3877,22 @@ static const ARMCPRegInfo el3_no_el2_cp_reginfo[] = {
     { .name = "HSTR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 3,
       .access = PL2_RW, .type = ARM_CP_CONST, .resetvalue = 0 },
+    { .name = "FAR_EL2", .state = ARM_CP_STATE_BOTH,
+      .opc0 = 3, .opc1 = 4, .crn = 6, .crm = 0, .opc2 = 0,
+      .access = PL2_RW, .type = ARM_CP_CONST, .resetvalue = 0 },
+    { .name = "HIFAR", .state = ARM_CP_STATE_AA32,
+      .type = ARM_CP_CONST,
+      .cp = 15, .opc1 = 4, .crn = 6, .crm = 0, .opc2 = 2,
+      .access = PL2_RW, .resetvalue = 0 },
+    REGINFO_SENTINEL
+};
+
+/* Ditto, but for registers which exist in ARMv8 but not v7 */
+static const ARMCPRegInfo el3_no_el2_v8_cp_reginfo[] = {
+    { .name = "HCR2", .state = ARM_CP_STATE_AA32,
+      .cp = 15, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 4,
+      .access = PL2_RW,
+      .type = ARM_CP_CONST, .resetvalue = 0 },
     REGINFO_SENTINEL
 };
 
@@ -3895,10 +3922,26 @@ static void hcr_write(CPUARMState *env, const ARMCPRegInfo *ri, uint64_t value)
      * HCR_PTW forbids certain page-table setups
      * HCR_DC Disables stage1 and enables stage2 translation
      */
-    if ((raw_read(env, ri) ^ value) & (HCR_VM | HCR_PTW | HCR_DC)) {
+    if ((env->cp15.hcr_el2 ^ value) & (HCR_VM | HCR_PTW | HCR_DC)) {
         tlb_flush(CPU(cpu));
     }
-    raw_write(env, ri, value);
+    env->cp15.hcr_el2 = value;
+}
+
+static void hcr_writehigh(CPUARMState *env, const ARMCPRegInfo *ri,
+                          uint64_t value)
+{
+    /* Handle HCR2 write, i.e. write to high half of HCR_EL2 */
+    value = deposit64(env->cp15.hcr_el2, 32, 32, value);
+    hcr_write(env, NULL, value);
+}
+
+static void hcr_writelow(CPUARMState *env, const ARMCPRegInfo *ri,
+                         uint64_t value)
+{
+    /* Handle HCR write, i.e. write to low half of HCR_EL2 */
+    value = deposit64(env->cp15.hcr_el2, 0, 32, value);
+    hcr_write(env, NULL, value);
 }
 
 static const ARMCPRegInfo el2_cp_reginfo[] = {
@@ -3906,23 +3949,33 @@ static const ARMCPRegInfo el2_cp_reginfo[] = {
       .opc0 = 3, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 0,
       .access = PL2_RW, .fieldoffset = offsetof(CPUARMState, cp15.hcr_el2),
       .writefn = hcr_write },
+    { .name = "HCR", .state = ARM_CP_STATE_AA32,
+      .type = ARM_CP_ALIAS,
+      .cp = 15, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 0,
+      .access = PL2_RW, .fieldoffset = offsetof(CPUARMState, cp15.hcr_el2),
+      .writefn = hcr_writelow },
     { .name = "ELR_EL2", .state = ARM_CP_STATE_AA64,
       .type = ARM_CP_ALIAS,
       .opc0 = 3, .opc1 = 4, .crn = 4, .crm = 0, .opc2 = 1,
       .access = PL2_RW,
       .fieldoffset = offsetof(CPUARMState, elr_el[2]) },
-    { .name = "ESR_EL2", .state = ARM_CP_STATE_AA64,
+    { .name = "ESR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 5, .crm = 2, .opc2 = 0,
       .access = PL2_RW, .fieldoffset = offsetof(CPUARMState, cp15.esr_el[2]) },
-    { .name = "FAR_EL2", .state = ARM_CP_STATE_AA64,
+    { .name = "FAR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 6, .crm = 0, .opc2 = 0,
       .access = PL2_RW, .fieldoffset = offsetof(CPUARMState, cp15.far_el[2]) },
+    { .name = "HIFAR", .state = ARM_CP_STATE_AA32,
+      .type = ARM_CP_ALIAS,
+      .cp = 15, .opc1 = 4, .crn = 6, .crm = 0, .opc2 = 2,
+      .access = PL2_RW,
+      .fieldoffset = offsetofhigh32(CPUARMState, cp15.far_el[2]) },
     { .name = "SPSR_EL2", .state = ARM_CP_STATE_AA64,
       .type = ARM_CP_ALIAS,
       .opc0 = 3, .opc1 = 4, .crn = 4, .crm = 0, .opc2 = 0,
       .access = PL2_RW,
       .fieldoffset = offsetof(CPUARMState, banked_spsr[BANK_HYP]) },
-    { .name = "VBAR_EL2", .state = ARM_CP_STATE_AA64,
+    { .name = "VBAR_EL2", .state = ARM_CP_STATE_BOTH,
       .opc0 = 3, .opc1 = 4, .crn = 12, .crm = 0, .opc2 = 0,
       .access = PL2_RW, .writefn = vbar_write,
       .fieldoffset = offsetof(CPUARMState, cp15.vbar_el[2]),
@@ -3940,7 +3993,7 @@ static const ARMCPRegInfo el2_cp_reginfo[] = {
       .access = PL2_RW, .fieldoffset = offsetof(CPUARMState, cp15.mair_el[2]),
       .resetvalue = 0 },
     { .name = "HMAIR1", .state = ARM_CP_STATE_AA32,
-      .opc1 = 4, .crn = 10, .crm = 2, .opc2 = 1,
+      .cp = 15, .opc1 = 4, .crn = 10, .crm = 2, .opc2 = 1,
       .access = PL2_RW, .type = ARM_CP_ALIAS,
       .fieldoffset = offsetofhigh32(CPUARMState, cp15.mair_el[2]) },
     { .name = "AMAIR_EL2", .state = ARM_CP_STATE_BOTH,
@@ -3948,8 +4001,8 @@ static const ARMCPRegInfo el2_cp_reginfo[] = {
       .access = PL2_RW, .type = ARM_CP_CONST,
       .resetvalue = 0 },
     /* HAMAIR1 is mapped to AMAIR_EL2[63:32] */
-    { .name = "HMAIR1", .state = ARM_CP_STATE_AA32,
-      .opc1 = 4, .crn = 10, .crm = 3, .opc2 = 1,
+    { .name = "HAMAIR1", .state = ARM_CP_STATE_AA32,
+      .cp = 15, .opc1 = 4, .crn = 10, .crm = 3, .opc2 = 1,
       .access = PL2_RW, .type = ARM_CP_CONST,
       .resetvalue = 0 },
     { .name = "AFSR0_EL2", .state = ARM_CP_STATE_BOTH,
@@ -4132,6 +4185,16 @@ static const ARMCPRegInfo el2_cp_reginfo[] = {
       .cp = 15, .opc0 = 3, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 3,
       .access = PL2_RW,
       .fieldoffset = offsetof(CPUARMState, cp15.hstr_el2) },
+    REGINFO_SENTINEL
+};
+
+static const ARMCPRegInfo el2_v8_cp_reginfo[] = {
+    { .name = "HCR2", .state = ARM_CP_STATE_AA32,
+      .type = ARM_CP_ALIAS,
+      .cp = 15, .opc1 = 4, .crn = 1, .crm = 1, .opc2 = 4,
+      .access = PL2_RW,
+      .fieldoffset = offsetofhigh32(CPUARMState, cp15.hcr_el2),
+      .writefn = hcr_writehigh },
     REGINFO_SENTINEL
 };
 
@@ -5186,6 +5249,9 @@ void register_cp_regs_for_features(ARMCPU *cpu)
         };
         define_arm_cp_regs(cpu, vpidr_regs);
         define_arm_cp_regs(cpu, el2_cp_reginfo);
+        if (arm_feature(env, ARM_FEATURE_V8)) {
+            define_arm_cp_regs(cpu, el2_v8_cp_reginfo);
+        }
         /* RVBAR_EL2 is only implemented if EL2 is the highest EL */
         if (!arm_feature(env, ARM_FEATURE_EL3)) {
             ARMCPRegInfo rvbar = {
@@ -5218,6 +5284,9 @@ void register_cp_regs_for_features(ARMCPU *cpu)
             };
             define_arm_cp_regs(cpu, vpidr_regs);
             define_arm_cp_regs(cpu, el3_no_el2_cp_reginfo);
+            if (arm_feature(env, ARM_FEATURE_V8)) {
+                define_arm_cp_regs(cpu, el3_no_el2_v8_cp_reginfo);
+            }
         }
     }
     if (arm_feature(env, ARM_FEATURE_EL3)) {
@@ -5466,6 +5535,16 @@ void register_cp_regs_for_features(ARMCPU *cpu)
             REGINFO_SENTINEL
         };
         define_arm_cp_regs(cpu, auxcr_reginfo);
+        if (arm_feature(env, ARM_FEATURE_V8)) {
+            /* HACTLR2 maps to ACTLR_EL2[63:32] and is not in ARMv7 */
+            ARMCPRegInfo hactlr2_reginfo = {
+                .name = "HACTLR2", .state = ARM_CP_STATE_AA32,
+                .cp = 15, .opc1 = 4, .crn = 1, .crm = 0, .opc2 = 3,
+                .access = PL2_RW, .type = ARM_CP_CONST,
+                .resetvalue = 0
+            };
+            define_one_arm_cp_reg(cpu, &hactlr2_reginfo);
+        }
     }
 
     if (arm_feature(env, ARM_FEATURE_CBAR)) {
@@ -5620,12 +5699,6 @@ void arm_cpu_list(FILE *f, fprintf_function cpu_fprintf)
     (*cpu_fprintf)(f, "Available CPUs:\n");
     g_slist_foreach(list, arm_cpu_list_entry, &s);
     g_slist_free(list);
-#ifdef CONFIG_KVM
-    /* The 'host' CPU type is dynamically registered only if KVM is
-     * enabled, so we have to special-case it here:
-     */
-    (*cpu_fprintf)(f, "  host (only available in KVM mode)\n");
-#endif
 }
 
 static void arm_cpu_add_definition(gpointer data, gpointer user_data)
@@ -6367,15 +6440,15 @@ uint32_t arm_phys_excp_target_el(CPUState *cs, uint32_t excp_idx,
     switch (excp_idx) {
     case EXCP_IRQ:
         scr = ((env->cp15.scr_el3 & SCR_IRQ) == SCR_IRQ);
-        hcr = ((env->cp15.hcr_el2 & HCR_IMO) == HCR_IMO);
+        hcr = arm_hcr_el2_imo(env);
         break;
     case EXCP_FIQ:
         scr = ((env->cp15.scr_el3 & SCR_FIQ) == SCR_FIQ);
-        hcr = ((env->cp15.hcr_el2 & HCR_FMO) == HCR_FMO);
+        hcr = arm_hcr_el2_fmo(env);
         break;
     default:
         scr = ((env->cp15.scr_el3 & SCR_EA) == SCR_EA);
-        hcr = ((env->cp15.hcr_el2 & HCR_AMO) == HCR_AMO);
+        hcr = arm_hcr_el2_amo(env);
         break;
     };
 
@@ -6871,6 +6944,8 @@ static void v7m_exception_taken(ARMCPU *cpu, uint32_t lr, bool dotailchain,
     bool push_failed = false;
 
     armv7m_nvic_get_pending_irq_info(env->nvic, &exc, &targets_secure);
+    qemu_log_mask(CPU_LOG_INT, "...taking pending %s exception %d\n",
+                  targets_secure ? "secure" : "nonsecure", exc);
 
     if (arm_feature(env, ARM_FEATURE_V8)) {
         if (arm_feature(env, ARM_FEATURE_M_SECURITY) &&
@@ -6944,12 +7019,15 @@ static void v7m_exception_taken(ARMCPU *cpu, uint32_t lr, bool dotailchain,
          * we might now want to take a different exception which
          * targets a different security state, so try again from the top.
          */
+        qemu_log_mask(CPU_LOG_INT,
+                      "...derived exception on callee-saves register stacking");
         v7m_exception_taken(cpu, lr, true, true);
         return;
     }
 
     if (!arm_v7m_load_vector(cpu, exc, targets_secure, &addr)) {
         /* Vector load failed: derived exception */
+        qemu_log_mask(CPU_LOG_INT, "...derived exception on vector table load");
         v7m_exception_taken(cpu, lr, true, true);
         return;
     }
@@ -7078,6 +7156,7 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
             /* For all other purposes, treat ES as 0 (R_HXSR) */
             excret &= ~R_V7M_EXCRET_ES_MASK;
         }
+        exc_secure = excret & R_V7M_EXCRET_ES_MASK;
     }
 
     if (env->v7m.exception != ARMV7M_EXCP_NMI) {
@@ -7088,7 +7167,6 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
          * which security state's faultmask to clear. (v8M ARM ARM R_KBNF.)
          */
         if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-            exc_secure = excret & R_V7M_EXCRET_ES_MASK;
             if (armv7m_nvic_raw_execution_priority(env->nvic) >= 0) {
                 env->v7m.faultmask[exc_secure] = 0;
             }
@@ -7157,12 +7235,22 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
         }
     }
 
+    /*
+     * Set CONTROL.SPSEL from excret.SPSEL. Since we're still in
+     * Handler mode (and will be until we write the new XPSR.Interrupt
+     * field) this does not switch around the current stack pointer.
+     * We must do this before we do any kind of tailchaining, including
+     * for the derived exceptions on integrity check failures, or we will
+     * give the guest an incorrect EXCRET.SPSEL value on exception entry.
+     */
+    write_v7m_control_spsel_for_secstate(env, return_to_sp_process, exc_secure);
+
     if (sfault) {
         env->v7m.sfsr |= R_V7M_SFSR_INVER_MASK;
         armv7m_nvic_set_pending(env->nvic, ARMV7M_EXCP_SECURE, false);
-        v7m_exception_taken(cpu, excret, true, false);
         qemu_log_mask(CPU_LOG_INT, "...taking SecureFault on existing "
                       "stackframe: failed EXC_RETURN.ES validity check\n");
+        v7m_exception_taken(cpu, excret, true, false);
         return;
     }
 
@@ -7172,17 +7260,27 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
          */
         env->v7m.cfsr[env->v7m.secure] |= R_V7M_CFSR_INVPC_MASK;
         armv7m_nvic_set_pending(env->nvic, ARMV7M_EXCP_USAGE, env->v7m.secure);
-        v7m_exception_taken(cpu, excret, true, false);
         qemu_log_mask(CPU_LOG_INT, "...taking UsageFault on existing "
                       "stackframe: failed exception return integrity check\n");
+        v7m_exception_taken(cpu, excret, true, false);
         return;
     }
 
-    /* Set CONTROL.SPSEL from excret.SPSEL. Since we're still in
-     * Handler mode (and will be until we write the new XPSR.Interrupt
-     * field) this does not switch around the current stack pointer.
+    /*
+     * Tailchaining: if there is currently a pending exception that
+     * is high enough priority to preempt execution at the level we're
+     * about to return to, then just directly take that exception now,
+     * avoiding an unstack-and-then-stack. Note that now we have
+     * deactivated the previous exception by calling armv7m_nvic_complete_irq()
+     * our current execution priority is already the execution priority we are
+     * returning to -- none of the state we would unstack or set based on
+     * the EXCRET value affects it.
      */
-    write_v7m_control_spsel_for_secstate(env, return_to_sp_process, exc_secure);
+    if (armv7m_nvic_can_take_pending_exception(env->nvic)) {
+        qemu_log_mask(CPU_LOG_INT, "...tailchaining to pending exception\n");
+        v7m_exception_taken(cpu, excret, true, false);
+        return;
+    }
 
     switch_v7m_security_state(env, return_to_secure);
 
@@ -7229,10 +7327,10 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
                 /* Take a SecureFault on the current stack */
                 env->v7m.sfsr |= R_V7M_SFSR_INVIS_MASK;
                 armv7m_nvic_set_pending(env->nvic, ARMV7M_EXCP_SECURE, false);
-                v7m_exception_taken(cpu, excret, true, false);
                 qemu_log_mask(CPU_LOG_INT, "...taking SecureFault on existing "
                               "stackframe: failed exception return integrity "
                               "signature check\n");
+                v7m_exception_taken(cpu, excret, true, false);
                 return;
             }
 
@@ -7265,6 +7363,7 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
             /* v7m_stack_read() pended a fault, so take it (as a tail
              * chained exception on the same stack frame)
              */
+            qemu_log_mask(CPU_LOG_INT, "...derived exception on unstacking\n");
             v7m_exception_taken(cpu, excret, true, false);
             return;
         }
@@ -7301,10 +7400,10 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
                 armv7m_nvic_set_pending(env->nvic, ARMV7M_EXCP_USAGE,
                                         env->v7m.secure);
                 env->v7m.cfsr[env->v7m.secure] |= R_V7M_CFSR_INVPC_MASK;
-                v7m_exception_taken(cpu, excret, true, false);
                 qemu_log_mask(CPU_LOG_INT, "...taking UsageFault on existing "
                               "stackframe: failed exception return integrity "
                               "check\n");
+                v7m_exception_taken(cpu, excret, true, false);
                 return;
             }
         }
@@ -7340,9 +7439,9 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
         armv7m_nvic_set_pending(env->nvic, ARMV7M_EXCP_USAGE, false);
         env->v7m.cfsr[env->v7m.secure] |= R_V7M_CFSR_INVPC_MASK;
         ignore_stackfaults = v7m_push_stack(cpu);
-        v7m_exception_taken(cpu, excret, false, ignore_stackfaults);
         qemu_log_mask(CPU_LOG_INT, "...taking UsageFault on new stackframe: "
                       "failed exception return integrity check\n");
+        v7m_exception_taken(cpu, excret, false, ignore_stackfaults);
         return;
     }
 
@@ -7758,7 +7857,6 @@ void arm_v7m_cpu_do_interrupt(CPUState *cs)
 
     ignore_stackfaults = v7m_push_stack(cpu);
     v7m_exception_taken(cpu, lr, false, ignore_stackfaults);
-    qemu_log_mask(CPU_LOG_INT, "... as %d\n", env->v7m.exception);
 }
 
 /* Function used to synchronize QEMU's AArch64 register set with AArch32
@@ -7967,6 +8065,125 @@ void aarch64_sync_64_to_32(CPUARMState *env)
     env->regs[15] = env->pc;
 }
 
+static void take_aarch32_exception(CPUARMState *env, int new_mode,
+                                   uint32_t mask, uint32_t offset,
+                                   uint32_t newpc)
+{
+    /* Change the CPU state so as to actually take the exception. */
+    switch_mode(env, new_mode);
+    /*
+     * For exceptions taken to AArch32 we must clear the SS bit in both
+     * PSTATE and in the old-state value we save to SPSR_<mode>, so zero it now.
+     */
+    env->uncached_cpsr &= ~PSTATE_SS;
+    env->spsr = cpsr_read(env);
+    /* Clear IT bits.  */
+    env->condexec_bits = 0;
+    /* Switch to the new mode, and to the correct instruction set.  */
+    env->uncached_cpsr = (env->uncached_cpsr & ~CPSR_M) | new_mode;
+    /* Set new mode endianness */
+    env->uncached_cpsr &= ~CPSR_E;
+    if (env->cp15.sctlr_el[arm_current_el(env)] & SCTLR_EE) {
+        env->uncached_cpsr |= CPSR_E;
+    }
+    /* J and IL must always be cleared for exception entry */
+    env->uncached_cpsr &= ~(CPSR_IL | CPSR_J);
+    env->daif |= mask;
+
+    if (new_mode == ARM_CPU_MODE_HYP) {
+        env->thumb = (env->cp15.sctlr_el[2] & SCTLR_TE) != 0;
+        env->elr_el[2] = env->regs[15];
+    } else {
+        /*
+         * this is a lie, as there was no c1_sys on V4T/V5, but who cares
+         * and we should just guard the thumb mode on V4
+         */
+        if (arm_feature(env, ARM_FEATURE_V4T)) {
+            env->thumb =
+                (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_TE) != 0;
+        }
+        env->regs[14] = env->regs[15] + offset;
+    }
+    env->regs[15] = newpc;
+}
+
+static void arm_cpu_do_interrupt_aarch32_hyp(CPUState *cs)
+{
+    /*
+     * Handle exception entry to Hyp mode; this is sufficiently
+     * different to entry to other AArch32 modes that we handle it
+     * separately here.
+     *
+     * The vector table entry used is always the 0x14 Hyp mode entry point,
+     * unless this is an UNDEF/HVC/abort taken from Hyp to Hyp.
+     * The offset applied to the preferred return address is always zero
+     * (see DDI0487C.a section G1.12.3).
+     * PSTATE A/I/F masks are set based only on the SCR.EA/IRQ/FIQ values.
+     */
+    uint32_t addr, mask;
+    ARMCPU *cpu = ARM_CPU(cs);
+    CPUARMState *env = &cpu->env;
+
+    switch (cs->exception_index) {
+    case EXCP_UDEF:
+        addr = 0x04;
+        break;
+    case EXCP_SWI:
+        addr = 0x14;
+        break;
+    case EXCP_BKPT:
+        /* Fall through to prefetch abort.  */
+    case EXCP_PREFETCH_ABORT:
+        env->cp15.ifar_s = env->exception.vaddress;
+        qemu_log_mask(CPU_LOG_INT, "...with HIFAR 0x%x\n",
+                      (uint32_t)env->exception.vaddress);
+        addr = 0x0c;
+        break;
+    case EXCP_DATA_ABORT:
+        env->cp15.dfar_s = env->exception.vaddress;
+        qemu_log_mask(CPU_LOG_INT, "...with HDFAR 0x%x\n",
+                      (uint32_t)env->exception.vaddress);
+        addr = 0x10;
+        break;
+    case EXCP_IRQ:
+        addr = 0x18;
+        break;
+    case EXCP_FIQ:
+        addr = 0x1c;
+        break;
+    case EXCP_HVC:
+        addr = 0x08;
+        break;
+    case EXCP_HYP_TRAP:
+        addr = 0x14;
+    default:
+        cpu_abort(cs, "Unhandled exception 0x%x\n", cs->exception_index);
+    }
+
+    if (cs->exception_index != EXCP_IRQ && cs->exception_index != EXCP_FIQ) {
+        env->cp15.esr_el[2] = env->exception.syndrome;
+    }
+
+    if (arm_current_el(env) != 2 && addr < 0x14) {
+        addr = 0x14;
+    }
+
+    mask = 0;
+    if (!(env->cp15.scr_el3 & SCR_EA)) {
+        mask |= CPSR_A;
+    }
+    if (!(env->cp15.scr_el3 & SCR_IRQ)) {
+        mask |= CPSR_I;
+    }
+    if (!(env->cp15.scr_el3 & SCR_FIQ)) {
+        mask |= CPSR_F;
+    }
+
+    addr += env->cp15.hvbar;
+
+    take_aarch32_exception(env, ARM_CPU_MODE_HYP, mask, 0, addr);
+}
+
 static void arm_cpu_do_interrupt_aarch32(CPUState *cs)
 {
     ARMCPU *cpu = ARM_CPU(cs);
@@ -8000,6 +8217,11 @@ static void arm_cpu_do_interrupt_aarch32(CPUState *cs)
 
     if (moe) {
         env->cp15.mdscr_el1 = deposit64(env->cp15.mdscr_el1, 2, 4, moe);
+    }
+
+    if (env->exception.target_el == 2) {
+        arm_cpu_do_interrupt_aarch32_hyp(cs);
+        return;
     }
 
     /* TODO: Vectored interrupt controller.  */
@@ -8109,29 +8331,7 @@ static void arm_cpu_do_interrupt_aarch32(CPUState *cs)
         env->cp15.scr_el3 &= ~SCR_NS;
     }
 
-    switch_mode (env, new_mode);
-    /* For exceptions taken to AArch32 we must clear the SS bit in both
-     * PSTATE and in the old-state value we save to SPSR_<mode>, so zero it now.
-     */
-    env->uncached_cpsr &= ~PSTATE_SS;
-    env->spsr = cpsr_read(env);
-    /* Clear IT bits.  */
-    env->condexec_bits = 0;
-    /* Switch to the new mode, and to the correct instruction set.  */
-    env->uncached_cpsr = (env->uncached_cpsr & ~CPSR_M) | new_mode;
-    /* Set new mode endianness */
-    env->uncached_cpsr &= ~CPSR_E;
-    if (env->cp15.sctlr_el[arm_current_el(env)] & SCTLR_EE) {
-        env->uncached_cpsr |= CPSR_E;
-    }
-    env->daif |= mask;
-    /* this is a lie, as the was no c1_sys on V4T/V5, but who cares
-     * and we should just guard the thumb mode on V4 */
-    if (arm_feature(env, ARM_FEATURE_V4T)) {
-        env->thumb = (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_TE) != 0;
-    }
-    env->regs[14] = env->regs[15] + offset;
-    env->regs[15] = addr;
+    take_aarch32_exception(env, new_mode, mask, offset, addr);
 }
 
 /* Handle exception entry to a target EL which is using AArch64 */
@@ -8434,6 +8634,14 @@ static inline bool regime_translation_disabled(CPUARMState *env,
     if (mmu_idx == ARMMMUIdx_S2NS) {
         return (env->cp15.hcr_el2 & HCR_VM) == 0;
     }
+
+    if (env->cp15.hcr_el2 & HCR_TGE) {
+        /* TGE means that NS EL0/1 act as if SCTLR_EL1.M is zero */
+        if (!regime_is_secure(env, mmu_idx) && regime_el(env, mmu_idx) == 1) {
+            return true;
+        }
+    }
+
     return (regime_sctlr(env, mmu_idx) & SCTLR_M) == 0;
 }
 
@@ -9708,6 +9916,20 @@ static bool get_phys_addr_pmsav7(CPUARMState *env, uint32_t address,
             }
 
             if (address < base || address > base + rmask) {
+                /*
+                 * Address not in this region. We must check whether the
+                 * region covers addresses in the same page as our address.
+                 * In that case we must not report a size that covers the
+                 * whole page for a subsequent hit against a different MPU
+                 * region or the background region, because it would result in
+                 * incorrect TLB hits for subsequent accesses to addresses that
+                 * are in this MPU region.
+                 */
+                if (ranges_overlap(base, rmask,
+                                   address & TARGET_PAGE_MASK,
+                                   TARGET_PAGE_SIZE)) {
+                    *page_size = 1;
+                }
                 continue;
             }
 
@@ -9825,17 +10047,6 @@ static bool get_phys_addr_pmsav7(CPUARMState *env, uint32_t address,
 
     fi->type = ARMFault_Permission;
     fi->level = 1;
-    /*
-     * Core QEMU code can't handle execution from small pages yet, so
-     * don't try it. This way we'll get an MPU exception, rather than
-     * eventually causing QEMU to exit in get_page_addr_code().
-     */
-    if (*page_size < TARGET_PAGE_SIZE && (*prot & PAGE_EXEC)) {
-        qemu_log_mask(LOG_UNIMP,
-                      "MPU: No support for execution from regions "
-                      "smaller than 1K\n");
-        *prot &= ~PAGE_EXEC;
-    }
     return !(*prot & (1 << access_type));
 }
 
@@ -9927,6 +10138,22 @@ static void v8m_security_lookup(CPUARMState *env, uint32_t address,
                         sattrs->srvalid = true;
                         sattrs->sregion = r;
                     }
+                } else {
+                    /*
+                     * Address not in this region. We must check whether the
+                     * region covers addresses in the same page as our address.
+                     * In that case we must not report a size that covers the
+                     * whole page for a subsequent hit against a different MPU
+                     * region or the background region, because it would result
+                     * in incorrect TLB hits for subsequent accesses to
+                     * addresses that are in this MPU region.
+                     */
+                    if (limit >= base &&
+                        ranges_overlap(base, limit - base + 1,
+                                       addr_page_base,
+                                       TARGET_PAGE_SIZE)) {
+                        sattrs->subpage = true;
+                    }
                 }
             }
         }
@@ -10002,6 +10229,21 @@ static bool pmsav8_mpu_lookup(CPUARMState *env, uint32_t address,
             }
 
             if (address < base || address > limit) {
+                /*
+                 * Address not in this region. We must check whether the
+                 * region covers addresses in the same page as our address.
+                 * In that case we must not report a size that covers the
+                 * whole page for a subsequent hit against a different MPU
+                 * region or the background region, because it would result in
+                 * incorrect TLB hits for subsequent accesses to addresses that
+                 * are in this MPU region.
+                 */
+                if (limit >= base &&
+                    ranges_overlap(base, limit - base + 1,
+                                   addr_page_base,
+                                   TARGET_PAGE_SIZE)) {
+                    *is_subpage = true;
+                }
                 continue;
             }
 
@@ -10055,18 +10297,6 @@ static bool pmsav8_mpu_lookup(CPUARMState *env, uint32_t address,
 
     fi->type = ARMFault_Permission;
     fi->level = 1;
-    /*
-     * Core QEMU code can't handle execution from small pages yet, so
-     * don't try it. This means any attempted execution will generate
-     * an MPU exception, rather than eventually causing QEMU to exit in
-     * get_page_addr_code().
-     */
-    if (*is_subpage && (*prot & PAGE_EXEC)) {
-        qemu_log_mask(LOG_UNIMP,
-                      "MPU: No support for execution from regions "
-                      "smaller than 1K\n");
-        *prot &= ~PAGE_EXEC;
-    }
     return !(*prot & (1 << access_type));
 }
 
@@ -10709,13 +10939,13 @@ void HELPER(v7m_msr)(CPUARMState *env, uint32_t maskreg, uint32_t val)
             env->v7m.primask[M_REG_NS] = val & 1;
             return;
         case 0x91: /* BASEPRI_NS */
-            if (!env->v7m.secure) {
+            if (!env->v7m.secure || !arm_feature(env, ARM_FEATURE_M_MAIN)) {
                 return;
             }
             env->v7m.basepri[M_REG_NS] = val & 0xff;
             return;
         case 0x93: /* FAULTMASK_NS */
-            if (!env->v7m.secure) {
+            if (!env->v7m.secure || !arm_feature(env, ARM_FEATURE_M_MAIN)) {
                 return;
             }
             env->v7m.faultmask[M_REG_NS] = val & 1;
@@ -10727,8 +10957,10 @@ void HELPER(v7m_msr)(CPUARMState *env, uint32_t maskreg, uint32_t val)
             write_v7m_control_spsel_for_secstate(env,
                                                  val & R_V7M_CONTROL_SPSEL_MASK,
                                                  M_REG_NS);
-            env->v7m.control[M_REG_NS] &= ~R_V7M_CONTROL_NPRIV_MASK;
-            env->v7m.control[M_REG_NS] |= val & R_V7M_CONTROL_NPRIV_MASK;
+            if (arm_feature(env, ARM_FEATURE_M_MAIN)) {
+                env->v7m.control[M_REG_NS] &= ~R_V7M_CONTROL_NPRIV_MASK;
+                env->v7m.control[M_REG_NS] |= val & R_V7M_CONTROL_NPRIV_MASK;
+            }
             return;
         case 0x98: /* SP_NS */
         {
@@ -10797,9 +11029,15 @@ void HELPER(v7m_msr)(CPUARMState *env, uint32_t maskreg, uint32_t val)
         env->v7m.primask[env->v7m.secure] = val & 1;
         break;
     case 17: /* BASEPRI */
+        if (!arm_feature(env, ARM_FEATURE_M_MAIN)) {
+            goto bad_reg;
+        }
         env->v7m.basepri[env->v7m.secure] = val & 0xff;
         break;
     case 18: /* BASEPRI_MAX */
+        if (!arm_feature(env, ARM_FEATURE_M_MAIN)) {
+            goto bad_reg;
+        }
         val &= 0xff;
         if (val != 0 && (val < env->v7m.basepri[env->v7m.secure]
                          || env->v7m.basepri[env->v7m.secure] == 0)) {
@@ -10807,6 +11045,9 @@ void HELPER(v7m_msr)(CPUARMState *env, uint32_t maskreg, uint32_t val)
         }
         break;
     case 19: /* FAULTMASK */
+        if (!arm_feature(env, ARM_FEATURE_M_MAIN)) {
+            goto bad_reg;
+        }
         env->v7m.faultmask[env->v7m.secure] = val & 1;
         break;
     case 20: /* CONTROL */
@@ -10821,8 +11062,10 @@ void HELPER(v7m_msr)(CPUARMState *env, uint32_t maskreg, uint32_t val)
             !arm_v7m_is_handler_mode(env)) {
             write_v7m_control_spsel(env, (val & R_V7M_CONTROL_SPSEL_MASK) != 0);
         }
-        env->v7m.control[env->v7m.secure] &= ~R_V7M_CONTROL_NPRIV_MASK;
-        env->v7m.control[env->v7m.secure] |= val & R_V7M_CONTROL_NPRIV_MASK;
+        if (arm_feature(env, ARM_FEATURE_M_MAIN)) {
+            env->v7m.control[env->v7m.secure] &= ~R_V7M_CONTROL_NPRIV_MASK;
+            env->v7m.control[env->v7m.secure] |= val & R_V7M_CONTROL_NPRIV_MASK;
+        }
         break;
     default:
     bad_reg:
@@ -11282,9 +11525,13 @@ uint32_t HELPER(vfp_get_fpscr)(CPUARMState *env)
     fpscr = (env->vfp.xregs[ARM_VFP_FPSCR] & 0xffc8ffff)
             | (env->vfp.vec_len << 16)
             | (env->vfp.vec_stride << 20);
+
     i = get_float_exception_flags(&env->vfp.fp_status);
     i |= get_float_exception_flags(&env->vfp.standard_fp_status);
-    i |= get_float_exception_flags(&env->vfp.fp_status_f16);
+    /* FZ16 does not generate an input denormal exception.  */
+    i |= (get_float_exception_flags(&env->vfp.fp_status_f16)
+          & ~float_flag_input_denormal);
+
     fpscr |= vfp_exceptbits_from_host(i);
     return fpscr;
 }
@@ -11318,6 +11565,11 @@ void HELPER(vfp_set_fpscr)(CPUARMState *env, uint32_t val)
 {
     int i;
     uint32_t changed;
+
+    /* When ARMv8.2-FP16 is not supported, FZ16 is RES0.  */
+    if (!arm_feature(env, ARM_FEATURE_V8_FP16)) {
+        val &= ~FPCR_FZ16;
+    }
 
     changed = env->vfp.xregs[ARM_VFP_FPSCR];
     env->vfp.xregs[ARM_VFP_FPSCR] = (val & 0xffc8ffff);
@@ -11509,45 +11761,30 @@ float32 VFP_HELPER(fcvts, d)(float64 x, CPUARMState *env)
 #define VFP_CONV_FIX_FLOAT(name, p, fsz, isz, itype) \
 float##fsz HELPER(vfp_##name##to##p)(uint##isz##_t  x, uint32_t shift, \
                                      void *fpstp) \
-{ \
-    float_status *fpst = fpstp; \
-    float##fsz tmp; \
-    tmp = itype##_to_##float##fsz(x, fpst); \
-    return float##fsz##_scalbn(tmp, -(int)shift, fpst); \
-}
+{ return itype##_to_##float##fsz##_scalbn(x, -shift, fpstp); }
 
-/* Notice that we want only input-denormal exception flags from the
- * scalbn operation: the other possible flags (overflow+inexact if
- * we overflow to infinity, output-denormal) aren't correct for the
- * complete scale-and-convert operation.
- */
-#define VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype, round) \
-uint##isz##_t HELPER(vfp_to##name##p##round)(float##fsz x, \
-                                             uint32_t shift, \
-                                             void *fpstp) \
-{ \
-    float_status *fpst = fpstp; \
-    int old_exc_flags = get_float_exception_flags(fpst); \
-    float##fsz tmp; \
-    if (float##fsz##_is_any_nan(x)) { \
-        float_raise(float_flag_invalid, fpst); \
-        return 0; \
-    } \
-    tmp = float##fsz##_scalbn(x, shift, fpst); \
-    old_exc_flags |= get_float_exception_flags(fpst) \
-        & float_flag_input_denormal; \
-    set_float_exception_flags(old_exc_flags, fpst); \
-    return float##fsz##_to_##itype##round(tmp, fpst); \
+#define VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype, ROUND, suff)   \
+uint##isz##_t HELPER(vfp_to##name##p##suff)(float##fsz x, uint32_t shift, \
+                                            void *fpst)                   \
+{                                                                         \
+    if (unlikely(float##fsz##_is_any_nan(x))) {                           \
+        float_raise(float_flag_invalid, fpst);                            \
+        return 0;                                                         \
+    }                                                                     \
+    return float##fsz##_to_##itype##_scalbn(x, ROUND, shift, fpst);       \
 }
 
 #define VFP_CONV_FIX(name, p, fsz, isz, itype)                   \
 VFP_CONV_FIX_FLOAT(name, p, fsz, isz, itype)                     \
-VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype, _round_to_zero) \
-VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype, )
+VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype,               \
+                         float_round_to_zero, _round_to_zero)    \
+VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype,               \
+                         get_float_rounding_mode(fpst), )
 
 #define VFP_CONV_FIX_A64(name, p, fsz, isz, itype)               \
 VFP_CONV_FIX_FLOAT(name, p, fsz, isz, itype)                     \
-VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype, )
+VFP_CONV_FLOAT_FIX_ROUND(name, p, fsz, isz, itype,               \
+                         get_float_rounding_mode(fpst), )
 
 VFP_CONV_FIX(sh, d, 64, 64, int16)
 VFP_CONV_FIX(sl, d, 64, 64, int32)
@@ -11567,87 +11804,84 @@ VFP_CONV_FIX_A64(uq, s, 32, 64, uint64)
 #undef VFP_CONV_FLOAT_FIX_ROUND
 #undef VFP_CONV_FIX_A64
 
-/* Conversion to/from f16 can overflow to infinity before/after scaling.
- * Therefore we convert to f64, scale, and then convert f64 to f16; or
- * vice versa for conversion to integer.
- *
- * For 16- and 32-bit integers, the conversion to f64 never rounds.
- * For 64-bit integers, any integer that would cause rounding will also
- * overflow to f16 infinity, so there is no double rounding problem.
- */
-
-static float16 do_postscale_fp16(float64 f, int shift, float_status *fpst)
-{
-    return float64_to_float16(float64_scalbn(f, -shift, fpst), true, fpst);
-}
-
 uint32_t HELPER(vfp_sltoh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return do_postscale_fp16(int32_to_float64(x, fpst), shift, fpst);
+    return int32_to_float16_scalbn(x, -shift, fpst);
 }
 
 uint32_t HELPER(vfp_ultoh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return do_postscale_fp16(uint32_to_float64(x, fpst), shift, fpst);
+    return uint32_to_float16_scalbn(x, -shift, fpst);
 }
 
 uint32_t HELPER(vfp_sqtoh)(uint64_t x, uint32_t shift, void *fpst)
 {
-    return do_postscale_fp16(int64_to_float64(x, fpst), shift, fpst);
+    return int64_to_float16_scalbn(x, -shift, fpst);
 }
 
 uint32_t HELPER(vfp_uqtoh)(uint64_t x, uint32_t shift, void *fpst)
 {
-    return do_postscale_fp16(uint64_to_float64(x, fpst), shift, fpst);
-}
-
-static float64 do_prescale_fp16(float16 f, int shift, float_status *fpst)
-{
-    if (unlikely(float16_is_any_nan(f))) {
-        float_raise(float_flag_invalid, fpst);
-        return 0;
-    } else {
-        int old_exc_flags = get_float_exception_flags(fpst);
-        float64 ret;
-
-        ret = float16_to_float64(f, true, fpst);
-        ret = float64_scalbn(ret, shift, fpst);
-        old_exc_flags |= get_float_exception_flags(fpst)
-            & float_flag_input_denormal;
-        set_float_exception_flags(old_exc_flags, fpst);
-
-        return ret;
-    }
+    return uint64_to_float16_scalbn(x, -shift, fpst);
 }
 
 uint32_t HELPER(vfp_toshh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_int16(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_int16_scalbn(x, get_float_rounding_mode(fpst),
+                                   shift, fpst);
 }
 
 uint32_t HELPER(vfp_touhh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_uint16(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_uint16_scalbn(x, get_float_rounding_mode(fpst),
+                                    shift, fpst);
 }
 
 uint32_t HELPER(vfp_toslh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_int32(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_int32_scalbn(x, get_float_rounding_mode(fpst),
+                                   shift, fpst);
 }
 
 uint32_t HELPER(vfp_toulh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_uint32(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_uint32_scalbn(x, get_float_rounding_mode(fpst),
+                                    shift, fpst);
 }
 
 uint64_t HELPER(vfp_tosqh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_int64(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_int64_scalbn(x, get_float_rounding_mode(fpst),
+                                   shift, fpst);
 }
 
 uint64_t HELPER(vfp_touqh)(uint32_t x, uint32_t shift, void *fpst)
 {
-    return float64_to_uint64(do_prescale_fp16(x, shift, fpst), fpst);
+    if (unlikely(float16_is_any_nan(x))) {
+        float_raise(float_flag_invalid, fpst);
+        return 0;
+    }
+    return float16_to_uint64_scalbn(x, get_float_rounding_mode(fpst),
+                                    shift, fpst);
 }
 
 /* Set the current fp rounding mode and return the old one.
@@ -12276,6 +12510,7 @@ int arm_rmode_to_sf(int rmode)
         /* FIXME: add support for TIEAWAY and ODD */
         qemu_log_mask(LOG_UNIMP, "arm: unimplemented rounding mode: %d\n",
                       rmode);
+        /* fall through for now */
     case FPROUNDING_TIEEVEN:
     default:
         rmode = float_round_nearest_even;
@@ -12407,9 +12642,12 @@ void cpu_get_tb_cpu_state(CPUARMState *env, target_ulong *pc,
             zcr_len = 0;
         } else {
             int current_el = arm_current_el(env);
+            ARMCPU *cpu = arm_env_get_cpu(env);
 
-            zcr_len = env->vfp.zcr_el[current_el <= 1 ? 1 : current_el];
-            zcr_len &= 0xf;
+            zcr_len = cpu->sve_max_vq - 1;
+            if (current_el <= 1) {
+                zcr_len = MIN(zcr_len, 0xf & (uint32_t)env->vfp.zcr_el[1]);
+            }
             if (current_el < 2 && arm_feature(env, ARM_FEATURE_EL2)) {
                 zcr_len = MIN(zcr_len, 0xf & (uint32_t)env->vfp.zcr_el[2]);
             }
