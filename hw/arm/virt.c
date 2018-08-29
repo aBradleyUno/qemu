@@ -155,7 +155,7 @@ static const MemMapEntry a15memmap[] = {
     [VIRT_MEM] =                { 0x40000000, RAMLIMIT_BYTES },
     // zhuowei: t8015 peripherals
     [VIRT_AMCC] =               { 0x200000000, 0x00300000 }, // zhuowei: hack
-    [VIRT_S3C_UART] =           { 0x22e600000, 0x00001000 }, // zhuowei: hack
+    [VIRT_S3C_UART] =           { 0x20a0c0000, 0x00001000 }, // zhuowei: hack, Lex mod for T8010
     [VIRT_AIC] =                { 0x232100000, 0x00009000 }, // zhuowei: hack
     /* Additional 64 MB redist region (can contain up to 512 redistributors) */
     [VIRT_GIC_REDIST2] =        { 0x4000000000ULL, 0x4000000 },
